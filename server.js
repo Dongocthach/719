@@ -14,7 +14,54 @@ app.use(express.json());
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
-app.post("/say-hello", async (req, res) => {
+function requireAdminApiKey(req, res, next) {
+
+    const providedKey = req.get("x-admin-api-key");
+
+    console.log("========== Admin API Request ==========");
+    console.log("Time:", new Date().toISOString());
+    console.log("IP:", req.ip);
+    console.log("Method:", req.method);
+    console.log("URL:", req.originalUrl);
+    console.log("User-Agent:", req.get("User-Agent"));
+
+    if (!process.env.ADMIN_API_KEY) {
+        console.error("ADMIN_API_KEY environment variable is NOT configured.");
+
+        return res.status(500).json({
+            success: false,
+            message: "Server configuration error."
+        });
+    }
+
+    if (!providedKey) {
+
+        console.warn("Request rejected: Missing x-admin-api-key header.");
+
+        return res.status(401).json({
+            success: false,
+            message: "Missing API key."
+        });
+    }
+
+    if (providedKey !== process.env.ADMIN_API_KEY) {
+
+        console.warn("Request rejected: Invalid API key.");
+        console.warn("Received:", providedKey);
+
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized."
+        });
+    }
+
+    console.log("Authentication successful.");
+    console.log("======================================");
+
+    next();
+}
+
+app.post("/say-hello", requireAdminApiKey, async (req, res) => {
     try {
         const name = req.body.name;
 
@@ -47,7 +94,7 @@ app.post("/say-hello", async (req, res) => {
     }
 });
 
-app.post("/DeletePlayerDataByPlayerId", async (req, res) => {
+app.post("/DeletePlayerDataByPlayerId", requireAdminApiKey, async (req, res) => {
     try {
         const playerId =
             typeof req.body?.playerId === "string"
