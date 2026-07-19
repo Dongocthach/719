@@ -14,31 +14,35 @@ app.use(express.json());
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
-  app.post("/say-hello", async (req, res) => {
+app.post("/say-hello", async (req, res) => {
     try {
-        const name =
-            typeof req.body?.name === "string"
-                ? req.body.name.trim()
-                : "";
+        const name = req.body.name;
 
         if (!name) {
             return res.status(400).json({
-                error: "The name field is required."
+                success: false,
+                message: "Please enter a name."
             });
         }
 
         const result = await unity.callModuleFunction(
             "SayHello",
-            { name }
+            {
+                name
+            }
         );
-        
 
-        return res.json(result);
-    } catch (error) {
-        console.error(error);
+        res.json({
+            success: true,
+            result
+        });
+    }
+    catch (err) {
+        console.error(err);
 
-        return res.status(502).json({
-            error: "Cloud Code request failed."
+        res.status(500).json({
+            success: false,
+            message: err.message
         });
     }
 });
