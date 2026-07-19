@@ -106,7 +106,7 @@ async function sayHello(){
     }
 
     const response =
-        await fetch("/say-hello",{
+        await fetch("/DeletePlayerDataByPlayerId",{
 
             method:"POST",
 
@@ -119,16 +119,26 @@ async function sayHello(){
             })
         });
 
-  const json =await response.json();
+    const json =
+        await response.json();
 
-    if(json.success)
-    {
-        document.getElementById("result").innerHTML = json.result.output;
-        // document.getElementById("result").innerHTML= json.result;
+    const result =
+        document.getElementById("helloResult");
+
+    if(json.success){
+
+        if(typeof json.result==="object")
+            result.innerText=
+                JSON.stringify(json.result,null,2);
+        else
+            result.innerText=json.result;
+
+        result.className="result";
     }
-    else
-    {
-        document.getElementById("result").innerHTML=json.message;
+    else{
+
+        result.innerText=json.message;
+        result.className="result error";
     }
 }
 
@@ -145,7 +155,7 @@ async function deletePlayerData(){
     }
 
     const response =
-        await fetch("/DeletePlayerDataByPlayerId",{
+        await fetch("/delete-player-data",{
 
             method:"POST",
 
@@ -158,7 +168,8 @@ async function deletePlayerData(){
             })
         });
 
-    const json = await response.json();
+    const json =
+        await response.json();
 
     const result =
         document.getElementById("deleteResult");
