@@ -1,197 +1,617 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Unity Cloud Code Admin</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: Arial;
-            background: #f5f5f5;
-            margin: 40px;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #202124;
+            background: #f4f6f8;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 8%;
+            background: #111827;
+            color: white;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 15px;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            min-height: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 70px 20px;
+            text-align: center;
+            color: white;
+            background:
+                linear-gradient(
+                    135deg,
+                    #111827,
+                    #1d4ed8
+                );
+        }
+
+        .hero-content {
+            max-width: 760px;
+        }
+
+        .hero h1 {
+            margin: 0 0 20px;
+            font-size: clamp(38px, 7vw, 68px);
+        }
+
+        .hero p {
+            margin: 0 auto 30px;
+            max-width: 650px;
+            font-size: 19px;
+            line-height: 1.7;
+            color: #dbeafe;
+        }
+
+        .hero-button {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 9px;
+            color: white;
+            background: #2563eb;
+            text-decoration: none;
+            font-size: 17px;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .hero-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .section {
+            padding: 75px 20px;
+        }
+
+        .section-title {
+            margin: 0 0 12px;
+            text-align: center;
+            font-size: 34px;
+        }
+
+        .section-description {
+            max-width: 680px;
+            margin: 0 auto 40px;
+            text-align: center;
+            line-height: 1.6;
+            color: #5f6368;
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            margin: auto;
         }
 
         .card {
+            padding: 28px;
+            border-radius: 16px;
             background: white;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,.15);
-            max-width: 500px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.09);
         }
 
-        h2 {
+        .card h2 {
             margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            color: #5f6368;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            margin-top: 22px;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
 
         input {
             width: 100%;
-            padding: 10px;
-            margin-top: 8px;
-            margin-bottom: 15px;
+            padding: 13px;
+            border: 1px solid #c8ccd0;
+            border-radius: 8px;
             font-size: 16px;
-            box-sizing: border-box;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
         }
 
         button {
-            padding: 10px 20px;
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px 18px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            background: #2563eb;
             font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
         }
 
-        .result {
-            margin-top: 15px;
-            color: green;
-            white-space: pre-wrap;
+        button:hover {
+            background: #1d4ed8;
         }
 
-        .error {
-            color: red;
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .delete-button {
+            background: #dc2626;
+        }
+
+        .delete-button:hover {
+            background: #b91c1c;
+        }
+
+        .result {
+            min-height: 24px;
+            margin-top: 20px;
+            padding: 12px;
+            display: none;
+            border-radius: 8px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .result.success {
+            display: block;
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+        }
+
+        .result.error {
+            display: block;
+            color: #991b1b;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+        }
+
+        .warning {
+            margin-top: 20px;
+            padding: 13px;
+            border-radius: 8px;
+            color: #92400e;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        footer {
+            padding: 28px 20px;
+            text-align: center;
+            color: #cbd5e1;
+            background: #111827;
+        }
+
+        @media (max-width: 650px) {
+            nav {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                gap: 13px;
+            }
+
+            .hero {
+                min-height: 430px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<div class="card">
+    <nav>
+        <div class="logo">
+            Unity Cloud Code Admin
+        </div>
 
-    <h2>Say Hello</h2>
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#tools">Tools</a>
+            <a href="#say-hello-card">Say Hello</a>
+            <a href="#delete-card">Delete Data</a>
+        </div>
+    </nav>
 
-    <input
-        id="txtName"
-        placeholder="Enter your name">
+    <header id="home" class="hero">
+        <div class="hero-content">
+            <h1>Unity Cloud Code</h1>
 
-    <button onclick="sayHello()">
-        Say Hello
-    </button>
+            <p>
+                A simple administration website that connects your
+                Node.js server to Unity Cloud Code. Test module functions
+                and manage player Cloud Save data from one page.
+            </p>
 
-    <div
-        id="helloResult"
-        class="result">
-    </div>
+            <a class="hero-button" href="#tools">
+                Open Admin Tools
+            </a>
+        </div>
+    </header>
 
-</div>
+    <main id="tools" class="section">
+        <h2 class="section-title">
+            Cloud Code Tools
+        </h2>
 
+        <p class="section-description">
+            Use the greeting tool to test your Cloud Code connection.
+            Use the player-data tool only for authorized administrative
+            operations.
+        </p>
 
-<div class="card">
+        <div class="card-container">
 
-    <h2>Delete Player Cloud Save</h2>
+            <!-- Say Hello card -->
+            <section id="say-hello-card" class="card">
+                <h2>Say Hello</h2>
 
-    <input
-        id="txtPlayerId"
-        placeholder="Enter Player ID">
+                <p>
+                    Enter a name and call the
+                    <strong>SayHello</strong> Cloud Code function.
+                </p>
 
-    <button onclick="deletePlayerData()">
-        Delete Player Data
-    </button>
+                <form id="helloForm">
+                    <label for="txtName">
+                        Name
+                    </label>
 
-    <div
-        id="deleteResult"
-        class="result">
-    </div>
+                    <input
+                        id="txtName"
+                        name="name"
+                        type="text"
+                        maxlength="50"
+                        placeholder="Enter your name"
+                        autocomplete="name"
+                        required
+                    >
 
-</div>
+                    <button
+                        id="helloButton"
+                        type="submit"
+                    >
+                        Say Hello
+                    </button>
+                </form>
 
-<script>
-
-async function sayHello(){
-
-    const name =
-        document.getElementById("txtName").value.trim();
-
-    if(name===""){
-        alert("Please enter a name");
-        return;
-    }
-
-    const response =
-        await fetch("/say-hello",{
-
-            method:"POST",
-
-            headers:{
-                "Content-Type":"application/json"
-            },
-
-            body:JSON.stringify({
-                name:name
-            })
-        });
-
-    const json =
-        await response.json();
-
-    const result =
-        document.getElementById("helloResult");
-
-    if(json.success){
-
-        if(typeof json.result==="object")
-            result.innerText=
-                JSON.stringify(json.result,null,2);
-        else
-            result.innerText=json.result;
-
-        result.className="result";
-    }
-    else{
-
-        result.innerText=json.message;
-        result.className="result error";
-    }
-}
+                <div
+                    id="helloResult"
+                    class="result"
+                    role="status"
+                ></div>
+            </section>
 
 
+            <!-- Delete player data card -->
+            <section id="delete-card" class="card">
+                <h2>Delete Player Cloud Save</h2>
 
-async function deletePlayerData(){
+                <p>
+                    Enter a Unity Authentication Player ID to delete
+                    the player's Cloud Save data.
+                </p>
 
-    const playerId =
-        document.getElementById("txtPlayerId").value.trim();
+                <form id="deleteForm">
+                    <label for="txtPlayerId">
+                        Player ID
+                    </label>
 
-    if(playerId===""){
-        alert("Please enter Player ID");
-        return;
-    }
+                    <input
+                        id="txtPlayerId"
+                        name="playerId"
+                        type="text"
+                        placeholder="Enter Unity Player ID"
+                        autocomplete="off"
+                        required
+                    >
 
-    const response =
-        await fetch("/DeletePlayerDataByPlayerId",{
+                    <button
+                        id="deleteButton"
+                        class="delete-button"
+                        type="submit"
+                    >
+                        Delete Player Data
+                    </button>
+                </form>
 
-            method:"POST",
+                <div class="warning">
+                    This operation can permanently delete player Cloud
+                    Save data. Confirm the Player ID carefully.
+                </div>
 
-            headers:{
-                "Content-Type":"application/json"
-            },
+                <div
+                    id="deleteResult"
+                    class="result"
+                    role="status"
+                ></div>
+            </section>
 
-            body:JSON.stringify({
-                playerId:playerId
-            })
-        });
+        </div>
+    </main>
 
-    const json =
-        await response.json();
+    <footer>
+        Unity Cloud Code Admin Website
+    </footer>
 
-    const result =
-        document.getElementById("deleteResult");
+    <script>
+        const helloForm =
+            document.getElementById("helloForm");
 
-    if(json.success){
+        const nameInput =
+            document.getElementById("txtName");
 
-        result.innerText=
-            json.message;
+        const helloButton =
+            document.getElementById("helloButton");
 
-        result.className="result";
-    }
-    else{
+        const helloResult =
+            document.getElementById("helloResult");
 
-        result.innerText=
-            json.message;
 
-        result.className="result error";
-    }
+        const deleteForm =
+            document.getElementById("deleteForm");
 
-}
+        const playerIdInput =
+            document.getElementById("txtPlayerId");
 
-</script>
+        const deleteButton =
+            document.getElementById("deleteButton");
+
+        const deleteResult =
+            document.getElementById("deleteResult");
+
+
+        function showResult(element, message, success) {
+            element.textContent = message;
+
+            element.className =
+                success
+                    ? "result success"
+                    : "result error";
+        }
+
+
+        function extractCloudCodeResult(value) {
+            if (typeof value === "string") {
+                return value;
+            }
+
+            if (typeof value?.output === "string") {
+                return value.output;
+            }
+
+            if (typeof value?.result === "string") {
+                return value.result;
+            }
+
+            if (typeof value?.data === "string") {
+                return value.data;
+            }
+
+            return JSON.stringify(value, null, 2);
+        }
+
+
+        helloForm.addEventListener(
+            "submit",
+            async (event) => {
+                event.preventDefault();
+
+                const name = nameInput.value.trim();
+
+                if (!name) {
+                    showResult(
+                        helloResult,
+                        "Please enter a name.",
+                        false
+                    );
+
+                    return;
+                }
+
+                helloButton.disabled = true;
+                helloButton.textContent = "Loading...";
+
+                helloResult.className = "result";
+                helloResult.textContent = "";
+
+                try {
+                    const response = await fetch("/say-hello", {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            name
+                        })
+                    });
+
+                    const json = await response.json();
+
+                    if (!response.ok || !json.success) {
+                        throw new Error(
+                            json.message ||
+                            "The SayHello request failed."
+                        );
+                    }
+
+                    const message =
+                        extractCloudCodeResult(json.result);
+
+                    showResult(
+                        helloResult,
+                        message,
+                        true
+                    );
+                }
+                catch (error) {
+                    showResult(
+                        helloResult,
+                        error.message,
+                        false
+                    );
+                }
+                finally {
+                    helloButton.disabled = false;
+                    helloButton.textContent = "Say Hello";
+                }
+            }
+        );
+
+
+        deleteForm.addEventListener(
+            "submit",
+            async (event) => {
+                event.preventDefault();
+
+                const playerId =
+                    playerIdInput.value.trim();
+
+                if (!playerId) {
+                    showResult(
+                        deleteResult,
+                        "Please enter a Player ID.",
+                        false
+                    );
+
+                    return;
+                }
+
+                const confirmed = window.confirm(
+                    "Delete all Cloud Save data for this player?\n\n" +
+                    playerId +
+                    "\n\nThis action may not be reversible."
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                deleteButton.disabled = true;
+                deleteButton.textContent = "Deleting...";
+
+                deleteResult.className = "result";
+                deleteResult.textContent = "";
+
+                try {
+                    const response = await fetch(
+                        "/DeletePlayerDataByPlayerId",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                playerId
+                            })
+                        }
+                    );
+
+                    const json = await response.json();
+
+                    if (!response.ok || !json.success) {
+                        throw new Error(
+                            json.message ||
+                            "Failed to delete player data."
+                        );
+                    }
+
+                    showResult(
+                        deleteResult,
+                        json.message ||
+                        "Player Cloud Save data deleted successfully.",
+                        true
+                    );
+
+                    playerIdInput.value = "";
+                }
+                catch (error) {
+                    showResult(
+                        deleteResult,
+                        error.message,
+                        false
+                    );
+                }
+                finally {
+                    deleteButton.disabled = false;
+                    deleteButton.textContent =
+                        "Delete Player Data";
+                }
+            }
+        );
+    </script>
 
 </body>
 </html>
