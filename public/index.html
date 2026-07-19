@@ -89,13 +89,12 @@ async function sayHello(){
 
     if(json.success)
     {
-        document.getElementById("result").innerHTML=
-        json.result;
+        document.getElementById("result").innerHTML = json.result.output;
+        // document.getElementById("result").innerHTML= json.result;
     }
     else
     {
-        document.getElementById("result").innerHTML=
-        json.message;
+        document.getElementById("result").innerHTML=json.message;
     }
 
 }
