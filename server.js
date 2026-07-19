@@ -1,16 +1,20 @@
 require("dotenv").config();
 
 const express = require("express");
-const UnityCloudCodeClient = require("./unityCloudCodeClient");
+const path = require("path");
 
-const app = express();
-const port = process.env.PORT || 3000;
+const UnityCloudCodeClient = require("./unityCloudCodeClient");
 
 const unity = new UnityCloudCodeClient();
 
+const app = express();
+
 app.use(express.json());
 
-app.post("/say-hello", async (req, res) => {
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+
+  app.post("/say-hello", async (req, res) => {
     try {
         const name =
             typeof req.body?.name === "string"
@@ -27,6 +31,7 @@ app.post("/say-hello", async (req, res) => {
             "SayHello",
             { name }
         );
+        
 
         return res.json(result);
     } catch (error) {
@@ -38,6 +43,8 @@ app.post("/say-hello", async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server listening on http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log("Server started on port " + PORT);
 });
