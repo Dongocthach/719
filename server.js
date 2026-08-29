@@ -218,6 +218,36 @@ app.post("/ai", async (req, res) => {
     }
 });
 
+// Public endpoint to view all recorded chat exchanges from the log file.
+app.get("/chat-logs", (req, res) => {
+    try {
+        let logs = [];
+
+        if (fs.existsSync(CHAT_LOG_FILE)) {
+            const parsed = JSON.parse(
+                fs.readFileSync(CHAT_LOG_FILE, "utf8")
+            );
+
+            if (Array.isArray(parsed)) {
+                logs = parsed;
+            }
+        }
+
+        return res.json({
+            success: true,
+            count: logs.length,
+            logs
+        });
+    } catch (err) {
+        console.error("Read chat logs error:", err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to read chat logs."
+        });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
