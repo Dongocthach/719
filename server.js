@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 
 const UnityCloudCodeClient = require("./unityCloudCodeClient");
 
@@ -10,6 +11,34 @@ const unity = new UnityCloudCodeClient();
 const app = express();
 
 app.use(express.json());
+
+// File that records every AI chat exchange (name, message, reply).
+const CHAT_LOG_FILE = path.join(__dirname, "chat-logs.json");
+
+function appendChatLog(entry) {
+    try {
+        let logs = [];
+
+        if (fs.existsSync(CHAT_LOG_FILE)) {
+            const parsed = JSON.parse(
+                fs.readFileSync(CHAT_LOG_FILE, "utf8")
+            );
+
+            if (Array.isArray(parsed)) {
+                logs = parsed;
+            }
+        }
+
+        logs.push(entry);
+
+        fs.writeFileSync(
+            CHAT_LOG_FILE,
+            JSON.stringify(logs, null, 2)
+        );
+    } catch (err) {
+        console.error("Failed to write chat log:", err);
+    }
+}
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -131,6 +160,63 @@ app.post("/DeletePlayerDataByPlayerId", requireAdminApiKey, async (req, res) => 
     }
 });
 
+
+// Public AI chat endpoint (no admin key required).
+// Currently a stub — replace the reply logic with a real AI
+// backend (or a Unity Cloud Code function) when ready.
+app.post("/ai", async (req, res) => {
+    try {
+        const message =
+            typeof req.body?.message === "string"
+                ? req.body.message.trim()
+                : "";
+
+        const name =
+            typeof req.body?.name === "string" &&
+            req.body.name.trim().length > 0
+                ? req.body.name.trim().slice(0, 100)
+                : "Anonymous";
+
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a message."
+            });
+        }
+
+        // ---- STUB REPLY ----
+        // Swap this block for a call to your real AI backend,
+        // e.g.:
+        //   const result = await unity.callModuleFunction(
+        //       "YourAiFunction",
+        //       { message }
+        //   );
+        const reply =
+            "Hi! You said: \"" + message + "\". " +
+            "This is a stub reply from the /ai endpoint — " +
+            "connect a real AI backend to get actual answers.";
+
+        // Record the exchange (name + chat content) to a JSON file.
+        appendChatLog({
+            timestamp: new Date().toISOString(),
+            name,
+            message,
+            reply
+        });
+
+        return res.json({
+            success: true,
+            reply
+        });
+    } catch (err) {
+        console.error("AI request error:", err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to process AI request."
+        });
+    }
+});
 
 const PORT = process.env.PORT || 3000;
 
