@@ -1,18 +1,15 @@
-require("dotenv").config();
-
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-
-const UnityCloudCodeClient = require("./unityCloudCodeClient");
-
-const unity = new UnityCloudCodeClient();
 
 const app = express();
 
 app.use(express.json());
 
-// File that records every AI chat exchange (name, message, reply).
+// Serve static files from public/ (chat.html, admin.html live here).
+app.use(express.static(path.join(__dirname, "public")));
+
+// File that records every AI chat exchange (name, message, verdict).
 const CHAT_LOG_FILE = path.join(__dirname, "chat-logs.json");
 
 function appendChatLog(entry) {
@@ -40,130 +37,179 @@ function appendChatLog(entry) {
     }
 }
 
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
+// ---------------------------------------------------------------------------
+// Scam-detection analysis
+//
+// If SCAM_API_URL is set, /ai will POST { message } to that backend and expect
+// an object with a `verdict` field (see the sample schema). Otherwise it uses
+// a small built-in Vietnamese rule analyzer so the app is testable without an
+// external service.
+// ---------------------------------------------------------------------------
 
-function requireAdminApiKey(req, res, next) {
+const WARNING_TOKENS = [
+    "công an",
+    "chuyển tiền",
+    "chuyển khoản",
+    "xác minh",
+    "vụ án",
+    "bảo lãnh",
+    "tai nạn",
+    "giả danh",
+    "điều tra",
+    "tòa án",
+    "viện kiểm sát",
+    "trúng thưởng",
+    "nạp tiền",
+    "biệt phủ",
+    "khóa tài khoản",
+    "định danh"
+];
 
-    const providedKey = req.get("x-admin-api-key");
+const GREETINGS = [
+    "hi", "hello", "chào", "xin chào", "alo", "chao", "hey"
+];
 
-    console.log("========== Admin API Request ==========");
-    console.log("Time:", new Date().toISOString());
-    console.log("IP:", req.ip);
-    console.log("Method:", req.method);
-    console.log("URL:", req.originalUrl);
-    console.log("User-Agent:", req.get("User-Agent"));
+function normalizeAnalysis(analysis) {
+    const a = (analysis && typeof analysis === "object") ? analysis : {};
 
-    if (!process.env.ADMIN_API_KEY) {
-        console.error("ADMIN_API_KEY environment variable is NOT configured.");
-
-        return res.status(500).json({
-            success: false,
-            message: "Server configuration error."
-        });
-    }
-
-    if (!providedKey) {
-
-        console.warn("Request rejected: Missing x-admin-api-key header.");
-
-        return res.status(401).json({
-            success: false,
-            message: "Missing API key."
-        });
-    }
-
-    if (providedKey !== process.env.ADMIN_API_KEY) {
-
-        console.warn("Request rejected: Invalid API key.");
-        console.warn("Received:", providedKey);
-
-        return res.status(401).json({
-            success: false,
-            message: "Unauthorized."
-        });
-    }
-
-    console.log("Authentication successful.");
-    console.log("======================================");
-
-    next();
+    return {
+        verdict:
+            typeof a.verdict === "string" && a.verdict
+                ? a.verdict
+                : "needs_more_info",
+        confidence:
+            typeof a.confidence === "number"
+                ? a.confidence
+                : null,
+        evidence: Array.isArray(a.evidence) ? a.evidence : [],
+        explanation:
+            typeof a.explanation === "string"
+                ? a.explanation
+                : "",
+        suggested_action:
+            typeof a.suggested_action === "string"
+                ? a.suggested_action
+                : "",
+        used_llm: !!a.used_llm,
+        matched_pattern_id:
+            typeof a.matched_pattern_id === "string"
+                ? a.matched_pattern_id
+                : null,
+        sources: Array.isArray(a.sources) ? a.sources : []
+    };
 }
 
-app.post("/say-hello", requireAdminApiKey, async (req, res) => {
-    try {
-        const name = req.body.name;
+// Fold Vietnamese to a plain ASCII base so matching is accent-insensitive.
+function foldVN(s) {
+    return (s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+}
 
-        if (!name) {
-            return res.status(400).json({
-                success: false,
-                message: "Please enter a name."
-            });
+function analyzeLocally(message) {
+    const lower = " " + foldVN(message) + " ";
+    const hits = WARNING_TOKENS.filter(function (token) {
+        return lower.indexOf(foldVN(token)) !== -1;
+    });
+
+    // 1) Warning: clear scam keywords present.
+    if (hits.length > 0) {
+        return {
+            verdict: "warning",
+            confidence: Math.min(0.9 + 0.03 * hits.length, 0.99),
+            evidence: hits.slice(0, 10),
+            explanation:
+                "Nội dung có các dấu hiệu điển hình của lừa đảo " +
+                "(giả danh cơ quan chức năng / yêu cầu chuyển tiền gấp).",
+            suggested_action:
+                "KHÔNG chuyển tiền hoặc làm theo yêu cầu. Gọi cho người " +
+                "thân theo số đã lưu sẵn và liên hệ công an địa phương để " +
+                "xác minh trước khi thực hiện bất kỳ giao dịch nào.",
+            used_llm: false,
+            matched_pattern_id: "rule-warning",
+            sources: []
+        };
+    }
+
+    // 2) Needs more info: short message or just a greeting.
+    const trimmed = message.trim();
+    const isGreeting = GREETINGS.some(function (g) {
+        return trimmed.toLowerCase() === g;
+    });
+
+    if (isGreeting || trimmed.length < 8) {
+        return {
+            verdict: "needs_more_info",
+            confidence: 0.9,
+            evidence: [],
+            explanation:
+                "Tin nhắn còn ngắn hoặc chưa rõ nội dung, chưa đủ thông tin " +
+                "để xác định có phải lừa đảo hay không.",
+            suggested_action:
+                "Hãy dán nguyên văn cuộc gọi / tin nhắn nghi ngờ để được " +
+                "kiểm tra chi tiết hơn.",
+            used_llm: true,
+            matched_pattern_id: null,
+            sources: []
+        };
+    }
+
+    // 3) Safe / not suspicious.
+    return {
+        verdict: "safe",
+        confidence: 0.9,
+        evidence: [],
+        explanation:
+            "Chưa phát hiện dấu hiệu lừa đảo rõ ràng trong nội dung này.",
+        suggested_action:
+            "Tiếp tục cẩn thận: không chia sẻ mã OTP, không chuyển tiền " +
+            "cho người lạ, và luôn kiểm tra lại bằng cách gọi cho người thân.",
+        used_llm: true,
+        matched_pattern_id: null,
+        sources: []
+    };
+}
+
+async function getAnalysis(message) {
+    const backendUrl = process.env.SCAM_API_URL;
+
+    if (backendUrl) {
+        const response = await fetch(backendUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message })
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                "Scam backend returned " + response.status
+            );
         }
 
-        const result = await unity.callModuleFunction(
-            "SayHello",
-            {
-                name
-            }
-        );
+        const data = await response.json();
 
-        res.json({
-            success: true,
-            result
-        });
-    }
-    catch (err) {
-        console.error(err);
+        // Accept { verdict: {...} }, { result: {...} }, or the analysis directly.
+        const analysis =
+            (data && typeof data === "object" &&
+                (data.verdict || data.result || data.analysis)) ||
+            data;
 
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
+        return normalizeAnalysis(analysis);
     }
+
+    return analyzeLocally(message);
+}
+
+// Serve the AI chat page as the landing page.
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "chat.html"));
 });
 
-app.post("/DeletePlayerDataByPlayerId", requireAdminApiKey, async (req, res) => {
-    try {
-        const playerId =
-            typeof req.body?.playerId === "string"
-                ? req.body.playerId.trim()
-                : "";
-
-        if (!playerId) {
-            return res.status(400).json({
-                success: false,
-                message: "Player ID is required."
-            });
-        }
-
-        const result = await unity.callModuleFunction(
-            "DeletePlayerDataByPlayerId",
-            {
-                playerId
-            }
-        );
-
-        return res.json({
-            success: true,
-            message: "Player Cloud Save data deleted successfully.",
-            playerId,
-            result
-        });
-    } catch (err) {
-        console.error("Delete player data error:", err);
-
-        return res.status(500).json({
-            success: false,
-            message: err.message || "Failed to delete player data."
-        });
-    }
-});
-
-
-// Public AI chat endpoint (no admin key required).
-// Currently a stub — replace the reply logic with a real AI
-// backend (or a Unity Cloud Code function) when ready.
+// Public AI chat endpoint for scam detection.
 app.post("/ai", async (req, res) => {
     try {
         const message =
@@ -180,45 +226,44 @@ app.post("/ai", async (req, res) => {
         if (!message) {
             return res.status(400).json({
                 success: false,
-                message: "Please enter a message."
+                message: "Vui lòng nhập nội dung tin nhắn."
             });
         }
 
-        // ---- STUB REPLY ----
-        // Swap this block for a call to your real AI backend,
-        // e.g.:
-        //   const result = await unity.callModuleFunction(
-        //       "YourAiFunction",
-        //       { message }
-        //   );
-        const reply =
-            "Hi! You said: \"" + message + "\". " +
-            "This is a stub reply from the /ai endpoint — " +
-            "connect a real AI backend to get actual answers.";
+        const verdict = await getAnalysis(message);
 
-        // Record the exchange (name + chat content) to a JSON file.
+        // A short reply kept for backwards compatibility / plain-text UIs.
+        const reply =
+            (verdict.explanation || "") +
+            (verdict.suggested_action
+                ? "\n" + verdict.suggested_action
+                : "");
+
+        // Record the full verdict alongside the message.
         appendChatLog({
             timestamp: new Date().toISOString(),
             name,
             message,
-            reply
+            reply,
+            verdict
         });
 
         return res.json({
             success: true,
-            reply
+            reply,
+            verdict
         });
     } catch (err) {
         console.error("AI request error:", err);
 
         return res.status(500).json({
             success: false,
-            message: err.message || "Failed to process AI request."
+            message: err.message || "Có lỗi khi xử lý yêu cầu."
         });
     }
 });
 
-// Public endpoint to view all recorded chat exchanges from the log file.
+// Endpoint to view all recorded chat exchanges from the log file.
 app.get("/chat-logs", (req, res) => {
     try {
         let logs = [];
@@ -243,7 +288,7 @@ app.get("/chat-logs", (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message: err.message || "Failed to read chat logs."
+            message: err.message || "Không đọc được dữ liệu chat."
         });
     }
 });
@@ -251,5 +296,5 @@ app.get("/chat-logs", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("Server started on port " + PORT);
+    console.log("AI chat server started on port " + PORT);
 });

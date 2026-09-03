@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>AI Chat</title>
+    <title>Trò Chuyện AI</title>
 
     <style>
         * {
@@ -19,18 +19,19 @@
             margin: 0;
             display: flex;
             font-family: Arial, Helvetica, sans-serif;
-            color: #ececf1;
-            background: #343541;
+            color: #1f2937;
+            background: #f3f4f6;
+            font-size: 16px;
         }
 
         /* ---------------- Sidebar ---------------- */
         .sidebar {
-            width: 260px;
+            width: 280px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            background: #202123;
-            border-right: 1px solid #2d2d35;
+            background: #ffffff;
+            border-right: 1px solid #e5e7eb;
             height: 100vh;
         }
 
@@ -38,43 +39,43 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 18px 16px;
-            font-size: 17px;
+            padding: 20px 16px;
+            font-size: 18px;
             font-weight: bold;
-            color: #ffffff;
+            color: #111827;
         }
 
         .logo-badge {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 9px;
-            background: linear-gradient(135deg, #10a37f, #0e7490);
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0ea47f, #0e7490);
             color: white;
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .new-chat-btn {
             margin: 6px 16px 14px;
-            padding: 11px 14px;
+            padding: 12px 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            background: #2f3037;
-            font-size: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            color: #111827;
+            background: #f3f4f6;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .new-chat-btn:hover {
-            background: #40414f;
+            background: #e5e7eb;
         }
 
         .history {
@@ -84,17 +85,17 @@
         }
 
         .history-title {
-            padding: 6px 10px;
-            font-size: 11px;
+            padding: 8px 10px;
+            font-size: 12px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            color: #8e8ea0;
+            color: #6b7280;
         }
 
         .history-empty {
             padding: 10px;
-            font-size: 13px;
-            color: #6e6e80;
+            font-size: 14px;
+            color: #9aa0a6;
         }
 
         .history-item {
@@ -102,24 +103,24 @@
             align-items: center;
             gap: 8px;
             width: 100%;
-            padding: 10px 10px;
+            padding: 11px 10px;
             margin-bottom: 2px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             background: transparent;
-            color: #d1d5db;
-            font-size: 14px;
+            color: #374151;
+            font-size: 15px;
             text-align: left;
             cursor: pointer;
         }
 
         .history-item:hover {
-            background: #2f3037;
+            background: #eef0f4;
         }
 
         .history-item.active {
-            background: #343541;
-            color: #ffffff;
+            background: #dcf3ed;
+            color: #0c6b54;
         }
 
         .history-item .title {
@@ -132,7 +133,7 @@
         .history-item .del {
             background: none;
             border: none;
-            color: #8e8ea0;
+            color: #9aa0a6;
             font-size: 14px;
             cursor: pointer;
             display: none;
@@ -144,7 +145,7 @@
         }
 
         .history-item .del:hover {
-            color: #ef4444;
+            color: #dc2626;
         }
 
         .profile {
@@ -152,63 +153,64 @@
             align-items: center;
             gap: 10px;
             padding: 14px 16px;
-            border-top: 1px solid #2d2d35;
+            border-top: 1px solid #e5e7eb;
         }
 
         .global-btn {
             margin: 4px 8px 10px;
-            padding: 10px 12px;
+            padding: 11px 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            border: none;
+            border: 1px solid #d1d5db;
             border-radius: 8px;
-            color: #d1d5db;
-            background: #2f3037;
+            color: #374151;
+            background: #f3f4f6;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .global-btn:hover {
-            background: #40414f;
-            color: white;
+            background: #e5e7eb;
+            color: #111827;
         }
 
         .profile .avatar {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: #40414f;
-            color: white;
-            font-size: 14px;
+            background: #e5e7eb;
+            color: #374151;
+            font-size: 15px;
             font-weight: bold;
         }
 
         .profile .name {
             flex: 1;
-            font-size: 14px;
+            font-size: 15px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            color: #111827;
         }
 
         .profile .icon {
             background: none;
             border: none;
-            color: #d1d5db;
-            font-size: 16px;
+            color: #6b7280;
+            font-size: 17px;
             cursor: pointer;
             padding: 4px;
         }
 
         .profile .icon:hover {
-            color: white;
+            color: #111827;
         }
 
         /* ---------------- Chat area ---------------- */
@@ -218,6 +220,7 @@
             flex-direction: column;
             min-width: 0;
             height: 100vh;
+            background: #f8fafc;
         }
 
         #chatWindow {
@@ -231,22 +234,27 @@
 
         .chat-empty {
             margin: auto;
-            max-width: 520px;
+            max-width: 540px;
             text-align: center;
-            color: #b3b3c0;
+            color: #6b7280;
         }
 
         .chat-empty h1 {
-            font-size: 26px;
-            color: #ffffff;
+            font-size: 28px;
+            color: #111827;
+        }
+
+        .chat-empty p {
+            font-size: 17px;
         }
 
         .msg {
             max-width: 760px;
             width: fit-content;
-            padding: 12px 16px;
-            border-radius: 12px;
-            line-height: 1.6;
+            padding: 14px 18px;
+            border-radius: 14px;
+            line-height: 1.7;
+            font-size: 17px;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
         }
@@ -254,19 +262,20 @@
         .msg.user {
             align-self: flex-end;
             color: white;
-            background: #2f3037;
-            border-bottom-right-radius: 4px;
+            background: #0ea47f;
+            border-bottom-right-radius: 5px;
         }
 
         .msg.ai {
             align-self: flex-start;
-            color: #ececf1;
-            background: #444654;
-            border-bottom-left-radius: 4px;
+            color: #1f2937;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 5px;
         }
 
         .msg.ai.typing {
-            color: #b3b3c0;
+            color: #9aa0a6;
             font-style: italic;
         }
 
@@ -274,15 +283,15 @@
             align-self: center;
             text-align: center;
             margin-bottom: 6px;
-            color: #ffffff;
-            font-size: 18px;
+            color: #111827;
+            font-size: 19px;
             font-weight: bold;
         }
 
         .log-sub {
             align-self: center;
-            color: #b3b3c0;
-            font-size: 13px;
+            color: #6b7280;
+            font-size: 14px;
             margin-bottom: 10px;
         }
 
@@ -290,16 +299,17 @@
             width: 100%;
             max-width: 760px;
             align-self: center;
-            padding: 14px 16px;
-            border-radius: 10px;
-            color: #ececf1;
-            background: #2f3037;
-            border: 1px solid #3f4049;
+            padding: 15px 18px;
+            border-radius: 12px;
+            color: #1f2937;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            font-size: 15px;
         }
 
         .log-card .row {
-            margin-bottom: 6px;
-            line-height: 1.5;
+            margin-bottom: 7px;
+            line-height: 1.6;
             overflow-wrap: anywhere;
         }
 
@@ -309,22 +319,22 @@
 
         .log-card .name {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 3px 9px;
+            border-radius: 7px;
             color: white;
-            background: #10a37f;
-            font-size: 12px;
+            background: #0ea47f;
+            font-size: 13px;
             font-weight: bold;
         }
 
         .log-card .time {
             float: right;
-            color: #8e8ea0;
-            font-size: 12px;
+            color: #6b7280;
+            font-size: 13px;
         }
 
         .log-card .label {
-            color: #8e8ea0;
+            color: #6b7280;
             font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
@@ -334,50 +344,157 @@
         .input-bar {
             display: flex;
             gap: 10px;
-            padding: 14px 24px 20px;
-            max-width: 820px;
+            padding: 16px 24px 22px;
+            max-width: 840px;
             width: 100%;
             margin: 0 auto;
         }
 
         .input-bar input {
             flex: 1;
-            padding: 13px 16px;
-            border: 1px solid #565869;
-            border-radius: 10px;
-            color: white;
-            background: #40414f;
-            font-size: 16px;
+            padding: 15px 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 12px;
+            color: #111827;
+            background: #ffffff;
+            font-size: 18px;
             outline: none;
         }
 
         .input-bar input::placeholder {
-            color: #8e8ea0;
+            color: #9aa0a6;
         }
 
         .input-bar input:focus {
-            border-color: #10a37f;
-            box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.18);
+            border-color: #0ea47f;
+            box-shadow: 0 0 0 3px rgba(14, 164, 127, 0.18);
         }
 
         .input-bar button {
-            padding: 13px 22px;
+            padding: 15px 24px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             color: white;
-            background: #10a37f;
-            font-size: 16px;
+            background: #0ea47f;
+            font-size: 17px;
             font-weight: bold;
             cursor: pointer;
         }
 
         .input-bar button:hover {
-            background: #0e916f;
+            background: #0c8d6c;
         }
 
         .input-bar button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        /* ---------------- Verdict cards ---------------- */
+        .msg.verdict {
+            width: 100%;
+            max-width: 760px;
+            align-self: flex-start;
+            padding: 14px 16px 16px;
+            border-left: 6px solid #9ca3af;
+        }
+
+        .msg.verdict.warning {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .msg.verdict.needs_more_info {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .msg.verdict.safe {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+
+        .vc-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .vc-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .verdict.warning .vc-badge {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .verdict.needs_more_info .vc-badge {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .verdict.safe .vc-badge {
+            background: #10b981;
+            color: #fff;
+        }
+
+        .vc-confidence {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: bold;
+        }
+
+        .vc-section {
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .vc-explanation {
+            margin: 4px 0 0;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .vc-evidence {
+            margin: 4px 0 0;
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+
+        .vc-action {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .verdict.warning .vc-action {
+            color: #7f1d1d;
+            border-color: #fecaca;
+            background: #fee2e2;
+        }
+
+        .vc-sources {
+            margin: 6px 0 0;
+            padding-left: 20px;
+        }
+
+        .vc-sources a {
+            color: #0e7490;
+            overflow-wrap: anywhere;
         }
 
         @media (max-width: 700px) {
@@ -390,7 +507,7 @@
                 height: auto;
                 max-height: 40vh;
                 border-right: none;
-                border-bottom: 1px solid #2d2d35;
+                border-bottom: 1px solid #e5e7eb;
             }
 
             .chat-area {
@@ -404,35 +521,35 @@
     <aside class="sidebar">
         <div class="logo">
             <div class="logo-badge">✦</div>
-            AI
+            Trợ lý Phát Hiện lừa Đảo
         </div>
 
         <button class="new-chat-btn" id="newChatBtn">
-            ✚ New Chat
+            ✚ Trò chuyện mới
         </button>
 
         <div class="history">
-            <div class="history-title">Chat History</div>
+            <div class="history-title">Lịch sử trò chuyện</div>
             <div class="history-empty" id="historyEmpty">
-                No conversations yet.
+                Chưa có cuộc trò chuyện nào.
             </div>
             <ul id="historyList" style="list-style:none;margin:0;padding:0;"></ul>
         </div>
 
-        <button class="global-btn" id="globalBtn">🌐 Global Logs</button>
+        <button class="global-btn" id="globalBtn">🌐 Dữ liệu toàn bộ</button>
 
         <div class="profile">
             <div class="avatar">U</div>
-            <div class="name" id="profileName">Profile</div>
-            <button class="icon" id="settingsBtn" title="Settings" aria-label="Settings">⚙</button>
+            <div class="name" id="profileName">Hồ sơ</div>
+            <button class="icon" id="settingsBtn" title="Cài đặt" aria-label="Cài đặt">⚙</button>
         </div>
     </aside>
 
     <main class="chat-area">
         <div id="chatWindow">
             <div class="chat-empty" id="emptyState">
-                <h1>Ask me anything</h1>
-                <p>Start a new chat and type a message below.</p>
+                <h1>Bạn cần giúp gì ạ?</h1>
+                <p>Gõ tin nhắn bên dưới để bắt đầu trò chuyện.</p>
             </div>
         </div>
 
@@ -440,11 +557,11 @@
             <input
                 id="txtMessage"
                 type="text"
-                placeholder="Type your message..."
+                placeholder="Nhập tin nhắn của bạn..."
                 autocomplete="off"
                 required
             >
-            <button id="sendButton" type="submit">Send</button>
+            <button id="sendButton" type="submit">Gửi</button>
         </form>
     </main>
 
@@ -503,6 +620,113 @@
             return bubble;
         }
 
+        // Verdict display metadata (Vietnamese).
+        const VERDICT_META = {
+            warning: { icon: "🚨", label: "Cảnh báo lừa đảo" },
+            needs_more_info: { icon: "❓", label: "Cần thêm thông tin" },
+            safe: { icon: "✅", label: "An toàn" }
+        };
+
+        function verdictType(v) {
+            const t = (v && v.verdict) || "";
+            return (t in VERDICT_META) ? t : "needs_more_info";
+        }
+
+        function buildVerdictCard(bubble, v) {
+            bubble.innerHTML = "";
+
+            const t = verdictType(v);
+            const meta = VERDICT_META[t];
+
+            bubble.classList.add("verdict", t);
+
+            const conf =
+                typeof v.confidence === "number"
+                    ? Math.round(v.confidence * 100)
+                    : null;
+
+            // Header: badge + confidence.
+            const banner = document.createElement("div");
+            banner.className = "vc-banner";
+
+            const badge = document.createElement("span");
+            badge.className = "vc-badge";
+            badge.textContent = meta.icon + " " + meta.label;
+            banner.appendChild(badge);
+
+            if (conf !== null) {
+                const c = document.createElement("span");
+                c.className = "vc-confidence";
+                c.textContent = "Độ tin cậy: " + conf + "%";
+                banner.appendChild(c);
+            }
+            bubble.appendChild(banner);
+
+            // Explanation.
+            if (v.explanation) {
+                const ex = document.createElement("div");
+                ex.className = "vc-explanation";
+                ex.textContent = v.explanation;
+                bubble.appendChild(ex);
+            }
+
+            // Evidence list.
+            if (Array.isArray(v.evidence) && v.evidence.length) {
+                const lab = document.createElement("div");
+                lab.className = "vc-section";
+                lab.textContent = "Dấu hiệu phát hiện";
+                bubble.appendChild(lab);
+
+                const ul = document.createElement("ul");
+                ul.className = "vc-evidence";
+                v.evidence.forEach(function (e) {
+                    const li = document.createElement("li");
+                    li.textContent = e;
+                    ul.appendChild(li);
+                });
+                bubble.appendChild(ul);
+            }
+
+            // Suggested action.
+            if (v.suggested_action) {
+                const act = document.createElement("div");
+                act.className = "vc-action";
+                act.textContent = "👉 " + v.suggested_action;
+                bubble.appendChild(act);
+            }
+
+            // Sources.
+            if (Array.isArray(v.sources) && v.sources.length) {
+                const lab = document.createElement("div");
+                lab.className = "vc-section";
+                lab.textContent = "Nguồn tham khảo";
+                bubble.appendChild(lab);
+
+                const ul = document.createElement("ul");
+                ul.className = "vc-sources";
+                v.sources.forEach(function (s) {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.textContent = s.title || s.url || s;
+                    a.href = s.url || "#";
+                    a.target = "_blank";
+                    a.rel = "noopener";
+                    li.appendChild(a);
+                    ul.appendChild(li);
+                });
+                bubble.appendChild(ul);
+            }
+        }
+
+        // Fill an AI bubble: verdict card when available, else plain text.
+        function fillAiMessage(bubble, m) {
+            if (m && m.verdict && m.verdict.verdict) {
+                buildVerdictCard(bubble, m.verdict);
+                return;
+            }
+            bubble.textContent = m.text || "";
+        }
+
         function renderConversation() {
             chatWindow.innerHTML = "";
 
@@ -514,8 +738,19 @@
             } else {
                 emptyState.style.display = "none";
                 current.messages.forEach(function (m) {
-                    appendMessage(m.text, m.role);
+                    const bubble = document.createElement("div");
+
+                    if (m.role === "user") {
+                        bubble.className = "msg user";
+                        bubble.textContent = m.text || "";
+                    } else {
+                        bubble.className = "msg ai";
+                        fillAiMessage(bubble, m);
+                    }
+
+                    chatWindow.appendChild(bubble);
                 });
+                chatWindow.scrollTop = chatWindow.scrollHeight;
             }
         }
 
@@ -538,12 +773,12 @@
 
                 const title = document.createElement("span");
                 title.className = "title";
-                title.textContent = conv.title || "New Chat";
+                title.textContent = conv.title || "Cuộc trò chuyện mới";
 
                 const del = document.createElement("button");
                 del.className = "del";
                 del.textContent = "✕";
-                del.title = "Delete chat";
+                del.title = "Xóa cuộc trò chuyện";
 
                 del.addEventListener("click", function (e) {
                     e.stopPropagation();
@@ -565,7 +800,7 @@
         const USER_NAME_KEY = "duyanhtod_ai_user_name";
 
         function getUserName() {
-            return localStorage.getItem(USER_NAME_KEY) || "Anonymous";
+            return localStorage.getItem(USER_NAME_KEY) || "Khách";
         }
 
         function saveUserName(name) {
@@ -573,22 +808,33 @@
             document.getElementById("profileName").textContent = name;
         }
 
+        // Names containing "admin" (case-insensitive) open the admin page.
+        function isAdminName(n) {
+            return (n || "").toLowerCase().indexOf("admin") !== -1;
+        }
+
         function promptForName() {
             const existing = getUserName();
             const name = window.prompt(
-                "What's your name? (shown as the chat profile)",
+                "Bạn tên gì? (tên sẽ hiển thị trong hồ sơ trò chuyện)",
                 existing
             );
 
             if (name && name.trim()) {
-                saveUserName(name.trim().slice(0, 100));
+                const clean = name.trim().slice(0, 100);
+                saveUserName(clean);
+
+                // If this is an admin name, go to the admin page.
+                if (isAdminName(clean)) {
+                    window.location.href = "admin.html";
+                }
             }
         }
 
         function newChat() {
             const conv = {
                 id: newId(),
-                title: "New Chat",
+                title: "Cuộc trò chuyện mới",
                 messages: []
             };
             conversations.push(conv);
@@ -649,11 +895,11 @@
             messageInput.value = "";
             renderConversation();
 
-            const typingBubble = appendMessage("Thinking...", "ai typing");
+            const typingBubble = appendMessage("Đang suy nghĩ...", "ai typing");
 
             busy = true;
             sendButton.disabled = true;
-            sendButton.textContent = "Sending...";
+            sendButton.textContent = "Đang gửi...";
 
             try {
                 const response = await fetch("/ai", {
@@ -672,23 +918,32 @@
 
                 if (!response.ok || !json.success) {
                     typingBubble.textContent =
-                        json.message || "The AI request failed.";
+                        json.message || "Lỗi xử lý yêu cầu.";
                     typingBubble.classList.add("msg", "ai");
                     return;
                 }
 
-                const reply = json.reply || "(no reply)";
-                typingBubble.textContent = reply;
-
-                current.messages.push({ role: "ai", text: reply });
+                if (json.verdict && json.verdict.verdict) {
+                    const aiMsg = {
+                        role: "ai",
+                        text: json.reply || "",
+                        verdict: json.verdict
+                    };
+                    fillAiMessage(typingBubble, aiMsg);
+                    current.messages.push(aiMsg);
+                } else {
+                    const reply = json.reply || "(không có phản hồi)";
+                    typingBubble.textContent = reply;
+                    current.messages.push({ role: "ai", text: reply });
+                }
             } catch (error) {
                 typingBubble.classList.remove("typing");
                 typingBubble.textContent =
-                    "Something went wrong: " + error.message;
+                    "Đã xảy ra lỗi: " + error.message;
             } finally {
                 busy = false;
                 sendButton.disabled = false;
-                sendButton.textContent = "Send";
+                sendButton.textContent = "Gửi";
                 saveConversations();
                 renderHistory();
                 messageInput.focus();
@@ -705,12 +960,12 @@
 
             const header = document.createElement("div");
             header.className = "log-header";
-            header.textContent = "🌐 Global Logs";
+            header.textContent = "🌐 Dữ liệu toàn bộ";
             chatWindow.appendChild(header);
 
             const loading = document.createElement("div");
             loading.className = "msg ai typing";
-            loading.textContent = "Loading...";
+            loading.textContent = "Đang tải...";
             chatWindow.appendChild(loading);
 
             try {
@@ -718,7 +973,7 @@
                 const json = await response.json();
 
                 if (!response.ok || !json.success) {
-                    throw new Error(json.message || "Failed to load logs.");
+                    throw new Error(json.message || "Không tải được dữ liệu.");
                 }
 
                 chatWindow.removeChild(loading);
@@ -728,13 +983,13 @@
                 const sub = document.createElement("div");
                 sub.className = "log-sub";
                 sub.textContent =
-                    logs.length + " record(s) in chat-logs.json";
+                    logs.length + " bản ghi trong chat-logs.json";
                 chatWindow.appendChild(sub);
 
                 if (logs.length === 0) {
                     const none = document.createElement("div");
                     none.className = "msg ai";
-                    none.textContent = "No chat records yet.";
+                    none.textContent = "Chưa có dữ liệu chat nào.";
                     chatWindow.appendChild(none);
                 }
 
@@ -748,7 +1003,7 @@
 
                     const name = document.createElement("span");
                     name.className = "name";
-                    name.textContent = log.name || "Anonymous";
+                    name.textContent = log.name || "Khách";
 
                     const time = document.createElement("span");
                     time.className = "time";
@@ -758,9 +1013,28 @@
                     nameRow.appendChild(time);
                     card.appendChild(nameRow);
 
+                    // Verdict badge (if recorded).
+                    if (log.verdict && log.verdict.verdict) {
+                        const meta = VERDICT_META[verdictType(log.verdict)];
+                        const bgMap = {
+                            warning: "#dc2626",
+                            needs_more_info: "#f59e0b",
+                            safe: "#10b981"
+                        };
+                        const vbRow = document.createElement("div");
+                        vbRow.className = "row";
+                        const vb = document.createElement("span");
+                        vb.className = "name";
+                        vb.style.background =
+                            bgMap[verdictType(log.verdict)] || "#6b7280";
+                        vb.textContent = meta.icon + " " + meta.label;
+                        vbRow.appendChild(vb);
+                        card.appendChild(vbRow);
+                    }
+
                     const msgLabel = document.createElement("div");
                     msgLabel.className = "row label";
-                    msgLabel.textContent = "Message";
+                    msgLabel.textContent = "Tin nhắn";
 
                     const msg = document.createElement("div");
                     msg.className = "row";
@@ -768,7 +1042,7 @@
 
                     const replyLabel = document.createElement("div");
                     replyLabel.className = "row label";
-                    replyLabel.textContent = "Reply";
+                    replyLabel.textContent = "Phản hồi";
 
                     const reply = document.createElement("div");
                     reply.className = "row";
@@ -785,7 +1059,7 @@
                 chatWindow.removeChild(loading);
                 const err = document.createElement("div");
                 err.className = "msg ai";
-                err.textContent = "Error: " + error.message;
+                err.textContent = "Lỗi: " + error.message;
                 chatWindow.appendChild(err);
             }
 
@@ -800,6 +1074,12 @@
             promptForName();
         }
         document.getElementById("profileName").textContent = getUserName();
+
+        // A returning visitor whose saved name is an admin goes to the
+        // admin page instead of the chat page.
+        if (isAdminName(getUserName())) {
+            window.location.href = "admin.html";
+        }
 
         if (!currentId) {
             newChat();

@@ -1,0 +1,247 @@
+========================================================
+HƯỚNG DẪN SỬ DỤNG DỰ ÁN AI CHAT (FRONT END)
+========================================================
+Ngôn ngữ: Tiếng Việt
+Cập nhật: cho nhóm phát triển
+
+
+1. DỰ ÁN NÀY LÀ GÌ?
+--------------------------------------------------------
+Đây là một web app chat AI (front end) phục vụ việc hỗ trợ,
+bảo vệ người lớn tuổi:
+- Người dùng mở trình duyệt, gõ tên và chat (giao diện sáng - light
+  mode, chữ to dễ đọc).
+- Mỗi tin nhắn + tên người dùng được server lưu vào file
+  chat-logs.json.
+- Có trang CHAT (cho người dùng thường) và trang QUẢN TRỊ (admin)
+  để xem toàn bộ dữ liệu & thống kê.
+
+Cấu trúc thư mục:
+  server.js            -> Server chạy web (Node.js + Express)
+  public/chat.html     -> Trang chat AI (giao diện người dùng, light mode)
+  public/admin.html    -> Trang quản trị (cho admin)
+  chat-logs.json       -> File lưu dữ liệu chat (tự tạo khi chạy)
+  package.json         -> Khai báo thư viện & lệnh
+  README.md            -> Hướng dẫn bằng tiếng Anh (ngắn)
+  HUONG_DAN_SU_DUNG.txt -> File này (hướng dẫn bằng tiếng Việt)
+
+
+2. ĐIỀU KIỆN CẦN CÓ
+--------------------------------------------------------
+- Cài Node.js (bản 16 trở lên là được, khuyến nghị bản mới).
+  Kiểm tra bằng lệnh:  node --version
+- Không cần cài thêm gì khác.
+
+
+3. CÁCH CHẠY (3 BƯỚC)
+--------------------------------------------------------
+Bước 1: Mở terminal / cmd trong thư mục dự án.
+
+Bước 2 (chỉ lần đầu):
+   npm install
+   (Lệnh này tải các thư viện cần thiết, ví dụ express.)
+
+Bước 3: Chạy server:
+   npm start
+   hoặc: node server.js
+
+Khi chạy thành công sẽ thấy dòng:
+   AI chat server started on port 3000
+
+LƯU Ý: Nếu bạn dùng Windows PowerShell và lệnh npm bị lỗi
+"running scripts is disabled", hãy dùng:
+   npm.cmd start
+hoặc mở Command Prompt (cmd) thay vì PowerShell.
+
+
+4. TRUY CẬP TRANG WEB (TRANG CHAT)
+--------------------------------------------------------
+Mở trình duyệt và gõ:
+   http://localhost:3000
+
+- Trang chat AI sẽ hiện ra ngay (đây là trang chủ).
+  Giao diện sáng (light mode), chữ to, rõ — dễ dùng với người
+  lớn tuổi.
+- Lần đầu truy cập, trình duyệt sẽ hỏi tên của bạn.
+  Tên này sẽ được hiển thị ở phần hồ sơ và lưu kèm tin nhắn.
+- Bấm nút "New Chat" để mở cuộc trò chuyện mới.
+- Lịch sử chat của bạn (trên máy bạn) hiện ở cột bên trái,
+  được lưu trong localStorage của trình duyệt.
+- Bấm "Global Logs" (🌐) để xem toàn bộ dữ liệu chat của mọi
+  người được lưu trong file chat-logs.json.
+- Đổi tên hồ sơ: bấm nút ⚙ ở góc dưới.
+
+QUAN TRỌNG - VÀO TRANG QUẢN TRỊ:
+  Khi được hỏi tên, hãy gõ một tên CÓ CHỨA chữ "admin"
+  (ví dụ: admin, Admin, quanlyadmin) rồi Enter.
+  Hệ thống sẽ tự chuyển bạn sang trang quản trị.
+  (Xem phần 5 bên dưới.)
+
+Đổi cổng chạy (nếu 3000 bị trùng):
+   Windows cmd :  set PORT=8080  rồi chạy  node server.js
+   PowerShell  :  $env:PORT=8080 rồi chạy  node server.js
+   Lúc đó truy cập: http://localhost:8080
+
+
+5. TRANG QUẢN TRỊ (ADMIN)
+--------------------------------------------------------
+Địa chỉ khi đã vào được:  http://localhost:3000/admin.html
+(nhưng nên vào qua việc nhập tên chứa "admin" như phần 4.)
+
+Trang quản trị có cột trái (sidebar) gồm 4 tab:
+   📊 Tổng Quan        -> Xem các chỉ số chung: tổng tin nhắn,
+                          số người dùng, tin nhắn hôm nay, số
+                          phản hồi, và hoạt động gần đây.
+   💬 Phiên Trò Chuyện -> Xem chi tiết từng tin nhắn trong file
+                          chat-logs.json (thời gian, người dùng,
+                          tin nhắn, phản hồi).
+   👥 Người Dùng       -> Danh sách người dùng đã trò chuyện, kèm
+                          số tin nhắn và thời gian hoạt động cuối.
+   📈 Phân Tích        -> Biểu đồ tin nhắn theo ngày và người
+                          dùng tích cực nhất.
+
+Cuối sidebar có 2 nút:
+   "Về trang Chat" / "Đăng xuất" -> xóa tên admin và quay lại
+                          trang chat cho người dùng thường.
+
+LƯU Ý: Trang admin hiện chỉ đọc dữ liệu trong chat-logs.json.
+        Đây KHÔNG phải xác thực an toàn (ai gõ chữ "admin" cũng
+        vào được). Nếu cần bảo mật thật, hãy thêm mật khẩu (xem
+        phần 8).
+
+
+6. CÁC API (để nhóm biết, khi cần gọi trực tiếp)
+--------------------------------------------------------
+- POST /ai
+    Gửi: { "name": "Tên người dùng", "message": "Nội dung chat" }
+    Trả về: { "success": true, "reply": "Câu trả lời" }
+    Mỗi lần gọi sẽ ghi 1 dòng vào chat-logs.json.
+
+- GET /chat-logs
+    Trả về toàn bộ dữ liệu đã ghi: { "success": true, "count": n, "logs": [...] }
+
+Ví dụ gọi bằng PowerShell:
+   Invoke-RestMethod -Method Post -Uri http://localhost:3000/ai `
+     -ContentType 'application/json' `
+     -Body '{"name":"Minh","message":"Xin chao"}'
+
+Ví dụ gọi bằng curl:
+   curl -X POST http://localhost:3000/ai ^
+     -H "Content-Type: application/json" ^
+     -d "{\"name\":\"Minh\",\"message\":\"Xin chao\"}"
+
+
+7. GẮN AI THẬT VÀO (QUAN TRỌNG CHO NHÓM)
+--------------------------------------------------------
+Hiện tại server chỉ trả câu trả lời "giả" (stub) để chạy thử.
+Để dùng AI thật, mở file server.js và tìm chỗ có ghi:
+
+   // ---- STUB REPLY ----
+   // Replace this block with a call to your real AI backend.
+
+Thay khối reply giả bằng lời gọi tới backend AI của bạn.
+Ví dụ nếu bạn có một server AI (FastAPI/Python...) chạy tại
+http://localhost:8000/chat thì có thể thêm đoạn (dùng fetch sẵn
+có trong Node.js):
+
+   const aiRes = await fetch("http://localhost:8000/chat", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ name, message })
+   });
+   const aiJson = await aiRes.json();
+   const reply = aiJson.reply;
+
+CHÚ Ý: server.js hiện dùng hàm xử lý đồng bộ (không async) cho
+/ai. Khi gắn AI thật (bắt buộc phải chờ dữ liệu), hãy đổi thành
+async function giống như thế này:
+
+   app.post("/ai", async (req, res) => { ... await ... });
+
+
+8. LƯU Ý VỀ BẢO MẬT KHI ĐƯA LÊN INTERNET
+--------------------------------------------------------
+- chat-logs.json chứa TÊN và NỘI DUNG CHAT của người dùng.
+- Endpoint GET /chat-logs (nút Global Logs) hiện KHÔNG bảo vệ,
+  nghĩa là ai truy cập server cũng đọc được toàn bộ dữ liệu chat.
+=> TRƯỚC KHI CHẠY CHO CÔNG CHÚNG, nhóm NÊN thêm xác thực
+   (ví dụ yêu cầu x-admin-api-key) vào /chat-logs, hoặc ẩn nút
+   Global Logs đi.
+- File chat-logs.json đã nằm trong .gitignore nên KHÔNG bị đẩy
+   lên GitHub (tránh lộ dữ liệu chat).
+
+
+9. ĐẨY LÊN GITHUB (DÀNH CHO NGƯỜI UP FILE)
+--------------------------------------------------------
+Thư mục node_modules và file chat-logs.json đã bị loại khỏi git
+(nhờ .gitignore). Khi clone về máy khác chỉ cần:
+   npm install
+   npm start
+
+
+10. CÔNG NGHỆ SỬ DỤNG TRONG DỰ ÁN NÀY
+--------------------------------------------------------
+FRONT END (phần chạy trên trình duyệt):
+- HTML5: cấu trúc trang (public/chat.html, public/admin.html).
+- CSS: tạo giao diện "light mode" (chữ to, màu sáng, tương phản
+  cao - thân thiện với người lớn tuổi). Không dùng framework CSS.
+- JavaScript (thuần - vanilla JS): toàn bộ logic phía trình duyệt
+  (chuyển tab, hiển thị tin nhắn, gọi API).
+- localStorage (của trình duyệt): lưu tên người dùng và lịch sử
+  trò chuyện trên từng máy.
+- fetch() / AJAX: giao tiếp với server qua các API HTTP.
+
+BACK END (server Node.js):
+- Node.js + Express: chạy server web, cung cấp các API /ai,
+  /chat-logs và phục vụ các file HTML tĩnh.
+- File chat-logs.json: dùng để lưu dữ liệu chat (thay cho cơ sở
+  dữ liệu - đơn giản, đọc/ghi bằng thư viện fs của Node).
+- npm: quản lý thư viện (chỉ cần gói "express").
+- Không cần cài cơ sở dữ liệu (DB) nào.
+
+KHI GẮN AI THẬT (tùy chọn - xem phần 7):
+- Có thể dùng Python (FastAPI/Flask) hoặc gọi API của nhà cung cấp
+  AI (OpenAI, Google...). Đoạn code đó chạy PHÍA SERVER, trang web
+  vẫn chỉ gọi về server của mình.
+
+
+11. LUỒNG HOẠT ĐỘNG CỦA FRONT END (app chạy ra sao)
+--------------------------------------------------------
+A) VỚI NGƯỜI DÙNG THƯỜNG (trang chat):
+  1) Mở http://localhost:3000 -> trình duyệt tải public/chat.html.
+  2) Lần đầu: trình duyệt hỏi tên -> lưu tên vào localStorage
+     (của người dùng đó).
+     - Nếu tên có chứa "admin" -> tự chuyển sang trang quản trị.
+  3) Người dùng gõ tin nhắn -> JS gửi yêu cầu fetch POST /ai
+     kèm { name, message }.
+  4) Server nhận, tạo câu trả lời, GHI vào chat-logs.json, rồi
+     trả về { reply }.
+  5) Trang chat hiển thị câu trả lời và lưu cuộc trò chuyện vào
+     localStorage (để khi mở lại vẫn thấy lịch sử trên máy đó).
+  6) "Trò chuyện mới" (New Chat) tạo cuộc trò chuyện trống;
+     "🌐 Dữ liệu toàn bộ" gọi GET /chat-logs để xem toàn bộ log.
+
+B) VỚI ADMIN (trang quản trị):
+  1) Gõ tên chứa "admin" -> vào public/admin.html.
+  2) Trang gọi GET /chat-logs để lấy toàn bộ dữ liệu từ
+     chat-logs.json (1 lần duy nhất khi mở).
+  3) Dùng dữ liệu đó vẽ 4 mục theo tab bên trái:
+     - Tổng Quan: đếm tổng tin, người dùng, tin hôm nay, phản hồi.
+     - Phiên Trò Chuyện: hiện bảng từng tin nhắn.
+     - Người Dùng: gom theo từng tên người dùng.
+     - Phân Tích: dựng biểu đồ cột theo ngày & người dùng.
+     (Tất cả tính toán ngay trên trình duyệt - không cần API riêng.)
+
+TÓM LẠI luồng dữ liệu:
+  Trình duyệt (chat.html / admin.html)
+      |   fetch (POST /ai, GET /chat-logs)
+      v
+  server.js (Node.js + Express)
+      |   đọc/ghi bằng fs
+      v
+  chat-logs.json  (nơi lưu toàn bộ tin nhắn + tên người dùng)
+
+
+========================================================
+HẾT
+========================================================
