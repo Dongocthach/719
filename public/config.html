@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cấu hình API</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2937;
+            background: #f3f4f6;
+            font-size: 16px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        header .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        header .logo-badge {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0ea47f, #0e7490);
+            color: #fff;
+            font-size: 17px;
+        }
+
+        header nav a {
+            margin-left: 14px;
+            color: #0e7490;
+            text-decoration: none;
+            font-size: 15px;
+        }
+
+        header nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        .card {
+            padding: 20px 22px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 18px;
+        }
+
+        .card h3 {
+            margin: 0 0 14px;
+            font-size: 17px;
+            color: #111827;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eef0f4;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .pill.set {
+            background: #dcf3ed;
+            color: #0c6b54;
+        }
+
+        .pill.unset {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .mono {
+            font-family: Consolas, monospace;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .hint {
+            margin: 0 0 10px;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px 15px;
+            border: 2px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #111827;
+            background: #fff;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #0ea47f;
+            box-shadow: 0 0 0 3px rgba(14, 164, 127, 0.18);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 6px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            background: #0ea47f;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0c8d6c;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            line-height: 1.6;
+        }
+
+        .result.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .result.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .warn {
+            margin-top: 10px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-badge">⚙</div>
+            Cấu hình API
+        </div>
+        <nav>
+            <a href="chat.html">Trang Chat</a>
+            <a href="admin.html">Quản Trị</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card">
+            <h3>Trạng thái hiện tại</h3>
+            <div id="statusBox">
+                <div class="status-row">
+                    <span>Đang tải...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Nhập / cập nhật API key</h3>
+
+            <form id="configForm">
+                <div class="field">
+                    <label for="txtAppKey">APP_API_KEY</label>
+                    <p class="hint">
+                        Key dùng để server gọi backend phát hiện lừa đảo
+                        (gửi trong header X-API-Key).
+                    </p>
+                    <input
+                        id="txtAppKey"
+                        type="password"
+                        placeholder="Nhập APP_API_KEY"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="txtAdminKey">ADMIN_API_KEY</label>
+                    <p class="hint">
+                        Key bảo vệ trang quản trị và trang cấu hình này
+                        (gửi trong header X-Admin-Key tới backend).
+                    </p>
+                    <input
+                        id="txtAdminKey"
+                        type="password"
+                        placeholder="Nhập ADMIN_API_KEY"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="field" id="currentKeyField" style="display:none;">
+                    <label for="txtCurrentAdminKey">
+                        ADMIN_API_KEY hiện tại (để xác thực)
+                    </label>
+                    <p class="hint">
+                        Vì đã có ADMIN_API_KEY, bạn phải nhập key hiện tại
+                        để được phép thay đổi.
+                    </p>
+                    <input
+                        id="txtCurrentAdminKey"
+                        type="password"
+                        placeholder="Nhập ADMIN_API_KEY hiện tại"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <button type="submit" id="saveBtn">Lưu cấu hình</button>
+
+                <div class="result" id="result"></div>
+            </form>
+
+            <div class="warn">
+                Cấu hình được lưu vào file <strong>.env</strong> trên máy chủ.
+                Không chia sẻ file này hoặc các key cho người khác.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const statusBox = document.getElementById("statusBox");
+        const currentKeyField = document.getElementById("currentKeyField");
+        const currentAdminInput = document.getElementById("txtCurrentAdminKey");
+        const appInput = document.getElementById("txtAppKey");
+        const adminInput = document.getElementById("txtAdminKey");
+        const configForm = document.getElementById("configForm");
+        const saveBtn = document.getElementById("saveBtn");
+        const resultBox = document.getElementById("result");
+
+        let adminKeySet = false;
+
+        function pill(isSet) {
+            return isSet
+                ? '<span class="pill set">Đã đặt</span>'
+                : '<span class="pill unset">Chưa đặt</span>';
+        }
+
+        function renderStatus(cfg) {
+            adminKeySet = !!cfg.adminApiKeySet;
+
+            statusBox.innerHTML =
+                '<div class="status-row">' +
+                    '<span>Backend URL<br><span class="mono">' +
+                    (cfg.backendUrl || "(chưa cấu hình)") +
+                    '</span></span>' +
+                '</div>' +
+                '<div class="status-row">' +
+                    '<span>APP_API_KEY ' +
+                    '<span class="mono">' + (cfg.appApiKeyMask || "") + '</span>' +
+                    '</span>' + pill(cfg.appApiKeySet) +
+                '</div>' +
+                '<div class="status-row">' +
+                    '<span>ADMIN_API_KEY ' +
+                    '<span class="mono">' + (cfg.adminApiKeyMask || "") + '</span>' +
+                    '</span>' + pill(cfg.adminApiKeySet) +
+                '</div>';
+
+            currentKeyField.style.display = adminKeySet ? "block" : "none";
+        }
+
+        async function loadStatus() {
+            try {
+                const r = await fetch("/api/config");
+                const j = await r.json();
+                renderStatus(j.config || {});
+            } catch (e) {
+                statusBox.innerHTML =
+                    '<div class="status-row"><span>Không tải được trạng thái.</span></div>';
+            }
+        }
+
+        function showResult(message, ok) {
+            resultBox.className = "result " + (ok ? "success" : "error");
+            resultBox.textContent = message;
+        }
+
+        configForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const appKey = appInput.value.trim();
+            const adminKey = adminInput.value.trim();
+            const currentKey = currentAdminInput.value.trim();
+
+            if (!appKey && !adminKey) {
+                showResult("Vui lòng nhập ít nhất một key.", false);
+                return;
+            }
+
+            if (adminKeySet && !currentKey) {
+                showResult("Vui lòng nhập ADMIN_API_KEY hiện tại để xác thực.", false);
+                return;
+            }
+
+            const headers = { "Content-Type": "application/json" };
+
+            if (currentKey) {
+                headers["x-admin-api-key"] = currentKey;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Đang lưu...";
+
+            try {
+                const r = await fetch("/api/config", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        app_api_key: appKey,
+                        admin_api_key: adminKey
+                    })
+                });
+
+                const j = await r.json();
+
+                if (!r.ok || !j.success) {
+                    throw new Error(j.message || "Lưu cấu hình thất bại.");
+                }
+
+                renderStatus(j.config || {});
+                appInput.value = "";
+                adminInput.value = "";
+                currentAdminInput.value = "";
+                showResult(j.message || "Đã lưu cấu hình.", true);
+            } catch (e) {
+                showResult(e.message, false);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Lưu cấu hình";
+            }
+        });
+
+        loadStatus();
+    </script>
+
+</body>
+</html>

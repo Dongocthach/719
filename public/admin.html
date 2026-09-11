@@ -315,6 +315,7 @@
         </nav>
 
         <div class="sidebar-footer">
+            <button id="configBtn">⚙ Cấu hình API</button>
             <button id="backToChat">↩ Về trang Chat</button>
             <button id="logoutBtn">🚪 Đăng xuất</button>
         </div>
@@ -630,6 +631,10 @@
         }
 
         // ---------------- Navigation / logout ----------------
+        document.getElementById("configBtn").addEventListener("click", function () {
+            window.location.href = "config.html";
+        });
+
         document.getElementById("backToChat").addEventListener("click", function () {
             // Clear admin name so the chat page does not bounce back here.
             localStorage.removeItem(USER_NAME_KEY);

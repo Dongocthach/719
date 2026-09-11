@@ -2,6 +2,43 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
+// Load key=value lines from .env (dependency-free dotenv).
+(function loadEnv() {
+    const envPath = path.join(__dirname, ".env");
+
+    if (!fs.existsSync(envPath)) {
+        return;
+    }
+
+    fs.readFileSync(envPath, "utf8").split(/\r?\n/).forEach(function (line) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.charAt(0) === "#") {
+            return;
+        }
+
+        const eq = trimmed.indexOf("=");
+
+        if (eq === -1) {
+            return;
+        }
+
+        const key = trimmed.slice(0, eq).trim();
+        let value = trimmed.slice(eq + 1).trim();
+
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+
+        if (key && !(key in process.env)) {
+            process.env[key] = value;
+        }
+    });
+})();
+
 const app = express();
 
 app.use(express.json());
@@ -137,6 +174,151 @@ async function backendAdminRequest(path, options = {}) {
 
     return data;
 }
+
+// ---------------------------------------------------------------------------
+// API-key configuration (editable from public/config.html).
+// Values are written to .env and applied to process.env immediately.
+// ---------------------------------------------------------------------------
+
+const ENV_FILE = path.join(__dirname, ".env");
+
+function readEnvLines() {
+    if (!fs.existsSync(ENV_FILE)) {
+        return [];
+    }
+
+    return fs.readFileSync(ENV_FILE, "utf8").split(/\r?\n/);
+}
+
+function updateEnvVars(updates) {
+    const lines = readEnvLines();
+    const remaining = Object.assign({}, updates);
+
+    const out = lines.map(function (line) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.charAt(0) === "#") {
+            return line;
+        }
+
+        const eq = trimmed.indexOf("=");
+
+        if (eq === -1) {
+            return line;
+        }
+
+        const key = trimmed.slice(0, eq).trim();
+
+        if (key in remaining) {
+            const value = remaining[key];
+            delete remaining[key];
+            process.env[key] = value;
+            return key + "=" + value;
+        }
+
+        return line;
+    });
+
+    Object.keys(remaining).forEach(function (key) {
+        out.push(key + "=" + remaining[key]);
+        process.env[key] = remaining[key];
+    });
+
+    fs.writeFileSync(ENV_FILE, out.join("\n"));
+}
+
+function maskSecret(value) {
+    if (!value) {
+        return "";
+    }
+
+    if (value.length <= 8) {
+        return "********";
+    }
+
+    return value.slice(0, 4) + "..." + value.slice(-4);
+}
+
+// Once ADMIN_API_KEY is set, the config endpoint requires it via the
+// x-admin-api-key header. Before it is first set, setup is allowed so the
+// keys can be entered (bootstrap).
+function requireAdminKey(req, res, next) {
+    const configured = process.env.ADMIN_API_KEY;
+
+    if (!configured) {
+        return next();
+    }
+
+    const provided = req.get("x-admin-api-key");
+
+    if (!provided || provided !== configured) {
+        return res.status(401).json({
+            success: false,
+            message: "Sai hoặc thiếu ADMIN_API_KEY."
+        });
+    }
+
+    next();
+}
+
+function configStatus() {
+    return {
+        backendUrl: process.env.SCAM_API_URL || "",
+        appApiKeySet: Boolean(process.env.APP_API_KEY),
+        appApiKeyMask: maskSecret(process.env.APP_API_KEY),
+        adminApiKeySet: Boolean(process.env.ADMIN_API_KEY),
+        adminApiKeyMask: maskSecret(process.env.ADMIN_API_KEY)
+    };
+}
+
+app.get("/api/config", (req, res) => {
+    return res.json({ success: true, config: configStatus() });
+});
+
+app.post("/api/config", requireAdminKey, (req, res) => {
+    try {
+        const updates = {};
+
+        const appKey =
+            typeof req.body?.app_api_key === "string"
+                ? req.body.app_api_key.trim()
+                : "";
+        const adminKey =
+            typeof req.body?.admin_api_key === "string"
+                ? req.body.admin_api_key.trim()
+                : "";
+
+        if (appKey) {
+            updates.APP_API_KEY = appKey;
+        }
+
+        if (adminKey) {
+            updates.ADMIN_API_KEY = adminKey;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Chưa nhập key nào để lưu."
+            });
+        }
+
+        updateEnvVars(updates);
+
+        return res.json({
+            success: true,
+            message: "Đã lưu cấu hình vào .env.",
+            config: configStatus()
+        });
+    } catch (err) {
+        console.error("Save config error:", err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Không ghi được file .env: " + err.message
+        });
+    }
+});
 
 // ---------------------------------------------------------------------------
 // Scam-detection analysis
