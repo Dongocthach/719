@@ -227,6 +227,36 @@ function updateEnvVars(updates) {
     fs.writeFileSync(ENV_FILE, out.join("\n"));
 }
 
+function removeEnvVars(keys) {
+    const lines = readEnvLines();
+    const wanted = new Set(keys);
+
+    const out = lines.filter(function (line) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.charAt(0) === "#") {
+            return true;
+        }
+
+        const eq = trimmed.indexOf("=");
+
+        if (eq === -1) {
+            return true;
+        }
+
+        const key = trimmed.slice(0, eq).trim();
+
+        if (wanted.has(key)) {
+            delete process.env[key];
+            return false;
+        }
+
+        return true;
+    });
+
+    fs.writeFileSync(ENV_FILE, out.join("\n"));
+}
+
 function maskSecret(value) {
     if (!value) {
         return "";
@@ -287,6 +317,23 @@ app.post("/api/config", requireAdminKey, (req, res) => {
             typeof req.body?.admin_api_key === "string"
                 ? req.body.admin_api_key.trim()
                 : "";
+        const backendUrl =
+            typeof req.body?.scam_api_url === "string"
+                ? req.body.scam_api_url.trim()
+                : "";
+
+        if (backendUrl) {
+            try {
+                new URL(backendUrl);
+            } catch {
+                return res.status(400).json({
+                    success: false,
+                    message: "SCAM_API_URL không phải URL hợp lệ."
+                });
+            }
+
+            updates.SCAM_API_URL = backendUrl;
+        }
 
         if (appKey) {
             updates.APP_API_KEY = appKey;
@@ -299,7 +346,7 @@ app.post("/api/config", requireAdminKey, (req, res) => {
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Chưa nhập key nào để lưu."
+                message: "Chưa nhập thông tin nào để lưu."
             });
         }
 
@@ -316,6 +363,36 @@ app.post("/api/config", requireAdminKey, (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Không ghi được file .env: " + err.message
+        });
+    }
+});
+
+// Delete all managed configuration keys from .env.
+const MANAGED_CONFIG_KEYS = [
+    "SCAM_API_URL",
+    "APP_API_KEY",
+    "ADMIN_API_KEY",
+    // legacy keys from earlier versions
+    "SCAM_API_KEY",
+    "SCAM_API_KEY_HEADER",
+    "SCAM_USER_ID"
+];
+
+app.delete("/api/config", requireAdminKey, (req, res) => {
+    try {
+        removeEnvVars(MANAGED_CONFIG_KEYS);
+
+        return res.json({
+            success: true,
+            message: "Đã xóa toàn bộ cấu hình.",
+            config: configStatus()
+        });
+    } catch (err) {
+        console.error("Delete config error:", err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Không xóa được cấu hình: " + err.message
         });
     }
 });

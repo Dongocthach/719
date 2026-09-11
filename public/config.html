@@ -169,6 +169,15 @@
             cursor: not-allowed;
         }
 
+        button.danger {
+            margin-top: 10px;
+            background: #dc2626;
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
         .result {
             display: none;
             margin-top: 14px;
@@ -235,6 +244,22 @@
 
             <form id="configForm">
                 <div class="field">
+                    <label for="txtBackendUrl">SCAM_API_URL</label>
+                    <p class="hint">
+                        Địa chỉ GỐC của backend phát hiện lừa đảo, KHÔNG kèm
+                        đường dẫn (ví dụ:
+                        https://scam-detect-xxxx.azurewebsites.net).
+                        Server sẽ tự thêm /api/chat.
+                    </p>
+                    <input
+                        id="txtBackendUrl"
+                        type="text"
+                        placeholder="https://ten-backend.azurewebsites.net"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="field">
                     <label for="txtAppKey">APP_API_KEY</label>
                     <p class="hint">
                         Key dùng để server gọi backend phát hiện lừa đảo
@@ -280,6 +305,10 @@
 
                 <button type="submit" id="saveBtn">Lưu cấu hình</button>
 
+                <button type="button" id="deleteBtn" class="danger">
+                    🗑 Xóa toàn bộ cấu hình
+                </button>
+
                 <div class="result" id="result"></div>
             </form>
 
@@ -294,10 +323,12 @@
         const statusBox = document.getElementById("statusBox");
         const currentKeyField = document.getElementById("currentKeyField");
         const currentAdminInput = document.getElementById("txtCurrentAdminKey");
+        const backendInput = document.getElementById("txtBackendUrl");
         const appInput = document.getElementById("txtAppKey");
         const adminInput = document.getElementById("txtAdminKey");
         const configForm = document.getElementById("configForm");
         const saveBtn = document.getElementById("saveBtn");
+        const deleteBtn = document.getElementById("deleteBtn");
         const resultBox = document.getElementById("result");
 
         let adminKeySet = false;
@@ -309,6 +340,7 @@
         }
 
         function renderStatus(cfg) {
+            window.__currentConfig = cfg;
             adminKeySet = !!cfg.adminApiKeySet;
 
             statusBox.innerHTML =
@@ -329,6 +361,11 @@
                 '</div>';
 
             currentKeyField.style.display = adminKeySet ? "block" : "none";
+
+            // Prefill the backend URL (unless the user is typing in it).
+            if (document.activeElement !== backendInput) {
+                backendInput.value = cfg.backendUrl || "";
+            }
         }
 
         async function loadStatus() {
@@ -353,9 +390,14 @@
             const appKey = appInput.value.trim();
             const adminKey = adminInput.value.trim();
             const currentKey = currentAdminInput.value.trim();
+            const backendUrl = backendInput.value.trim();
 
-            if (!appKey && !adminKey) {
-                showResult("Vui lòng nhập ít nhất một key.", false);
+            // Only send the URL when it actually changed.
+            const currentUrl = (window.__currentConfig || {}).backendUrl || "";
+            const urlChanged = backendUrl && backendUrl !== currentUrl;
+
+            if (!appKey && !adminKey && !urlChanged) {
+                showResult("Vui lòng nhập ít nhất một thông tin để lưu.", false);
                 return;
             }
 
@@ -378,6 +420,7 @@
                     method: "POST",
                     headers,
                     body: JSON.stringify({
+                        scam_api_url: urlChanged ? backendUrl : "",
                         app_api_key: appKey,
                         admin_api_key: adminKey
                     })
@@ -399,6 +442,63 @@
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.textContent = "Lưu cấu hình";
+            }
+        });
+
+        // ---------------- Delete all config ----------------
+        deleteBtn.addEventListener("click", async function () {
+            const currentKey = currentAdminInput.value.trim();
+
+            if (adminKeySet && !currentKey) {
+                showResult(
+                    "Vui lòng nhập ADMIN_API_KEY hiện tại để xóa cấu hình.",
+                    false
+                );
+                return;
+            }
+
+            const ok = window.confirm(
+                "Xóa TOÀN BỘ cấu hình (SCAM_API_URL, APP_API_KEY, " +
+                "ADMIN_API_KEY) khỏi file .env?\n\n" +
+                "Hành động này không thể hoàn tác."
+            );
+
+            if (!ok) {
+                return;
+            }
+
+            const headers = {};
+
+            if (currentKey) {
+                headers["x-admin-api-key"] = currentKey;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Đang xóa...";
+
+            try {
+                const r = await fetch("/api/config", {
+                    method: "DELETE",
+                    headers
+                });
+
+                const j = await r.json();
+
+                if (!r.ok || !j.success) {
+                    throw new Error(j.message || "Xóa cấu hình thất bại.");
+                }
+
+                renderStatus(j.config || {});
+                appInput.value = "";
+                adminInput.value = "";
+                currentAdminInput.value = "";
+                backendInput.value = "";
+                showResult(j.message || "Đã xóa toàn bộ cấu hình.", true);
+            } catch (e) {
+                showResult(e.message, false);
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = "🗑 Xóa toàn bộ cấu hình";
             }
         });
 
