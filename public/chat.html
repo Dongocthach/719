@@ -1506,11 +1506,10 @@
         }
         document.getElementById("profileName").textContent = getUserName();
 
-        // A returning visitor whose saved name is an admin goes to the
-        // admin page instead of the chat page.
-        if (isAdminName(getUserName())) {
-            window.location.href = "admin.html";
-        }
+        // NOTE: We intentionally do NOT auto-redirect to the admin page based
+        // on the saved name. Doing so made the chat page unreachable whenever
+        // the stored name contained "admin". Admins can still open the admin
+        // page on demand via the "🔑 Đăng nhập Quản trị" button.
 
         (async function initializeChat() {
             await syncBackendConversations();
