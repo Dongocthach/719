@@ -269,10 +269,44 @@
             font-size: 17px;
         }
 
+        .quick-prompt-title {
+            margin: 26px 0 10px;
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .quick-prompts {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .quick-prompt {
+            padding: 10px 13px;
+            border: 1px solid #a7f3d0;
+            border-radius: 10px;
+            color: #065f46;
+            background: #ecfdf5;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .quick-prompt:hover,
+        .quick-prompt:focus-visible {
+            border-color: #0ea47f;
+            background: #d1fae5;
+            outline: none;
+        }
+
         .msg {
+            position: relative;
             max-width: 760px;
             width: fit-content;
-            padding: 14px 18px;
+            padding: 33px 18px 14px;
             border-radius: 14px;
             line-height: 1.7;
             font-size: 17px;
@@ -280,11 +314,35 @@
             overflow-wrap: anywhere;
         }
 
+        .msg::before {
+            position: absolute;
+            top: 9px;
+            left: 16px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+
         .msg.user {
             align-self: flex-end;
             color: white;
             background: #0ea47f;
             border-bottom-right-radius: 5px;
+        }
+
+        .msg.user::before {
+            content: "● Bạn";
+            color: #d1fae5;
+        }
+
+        .risk-keyword {
+            padding: 1px 4px;
+            border-radius: 4px;
+            background: #fef3c7;
+            color: #7c2d12;
+            font-weight: 800;
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
         }
 
         .msg.ai {
@@ -295,9 +353,18 @@
             border-bottom-left-radius: 5px;
         }
 
+        .msg.ai::before {
+            content: "✦ Trợ lý AI";
+            color: #0f766e;
+        }
+
         .msg.ai.typing {
             color: #9aa0a6;
             font-style: italic;
+        }
+
+        .msg.ai.typing::before {
+            content: "✦ Trợ lý AI đang phân tích";
         }
 
         .log-header {
@@ -416,7 +483,7 @@
             width: 100%;
             max-width: 760px;
             align-self: flex-start;
-            padding: 14px 16px 16px;
+            padding: 36px 16px 16px;
             border-left: 6px solid #9ca3af;
         }
 
@@ -470,6 +537,68 @@
             font-weight: bold;
         }
 
+        .vc-risk {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #f3f4f6;
+        }
+
+        .vc-risk-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .vc-risk-title strong {
+            text-transform: uppercase;
+        }
+
+        .vc-risk-meter {
+            height: 8px;
+            margin-top: 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #d1d5db;
+        }
+
+        .vc-risk-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: #f59e0b;
+            transition: width 240ms ease;
+        }
+
+        .vc-risk.warning .vc-risk-fill { background: #dc2626; }
+        .vc-risk.safe .vc-risk-fill { background: #10b981; }
+
+        .vc-feedback-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .vc-feedback-button {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #374151;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .vc-feedback-button.correct:hover { border-color: #10b981; color: #047857; background: #ecfdf5; }
+        .vc-feedback-button.incorrect:hover { border-color: #ef4444; color: #b91c1c; background: #fef2f2; }
+        .vc-feedback-button:disabled { opacity: 0.55; cursor: not-allowed; }
+        .vc-feedback-status { color: #047857; font-size: 14px; font-weight: 700; }
+
         .vc-section {
             margin-top: 12px;
             font-size: 13px;
@@ -508,6 +637,27 @@
             background: #fee2e2;
         }
 
+        .vc-urgent-warning {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border: 1px solid #fca5a5;
+            border-radius: 10px;
+            background: #fff1f2;
+            color: #991b1b;
+            font-weight: 700;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .vc-ai-notice {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
         .vc-sources {
             margin: 6px 0 0;
             padding-left: 20px;
@@ -533,6 +683,15 @@
 
             .chat-area {
                 height: 60vh;
+            }
+
+            #chatWindow {
+                padding: 16px;
+            }
+
+            .quick-prompts {
+                align-items: stretch;
+                flex-direction: column;
             }
         }
     </style>
@@ -572,7 +731,13 @@
         <div id="chatWindow">
             <div class="chat-empty" id="emptyState">
                 <h1>Bạn cần giúp gì ạ?</h1>
-                <p>Gõ tin nhắn bên dưới để bắt đầu trò chuyện.</p>
+                <p>Gửi nội dung đáng ngờ để AI hỗ trợ nhận diện rủi ro lừa đảo.</p>
+                <div class="quick-prompt-title">Thử một tình huống mẫu</div>
+                <div class="quick-prompts">
+                    <button class="quick-prompt" type="button" data-prompt="Có người tự xưng công an yêu cầu tôi chuyển tiền để xác minh tài khoản.">🚨 Giả danh công an</button>
+                    <button class="quick-prompt" type="button" data-prompt="Người lạ yêu cầu tôi cung cấp mã OTP để nhận quà trúng thưởng.">🔐 Yêu cầu OTP</button>
+                    <button class="quick-prompt" type="button" data-prompt="Tôi nhận được một đường link lạ nói rằng tài khoản ngân hàng sắp bị khóa.">🔗 Đường link lạ</button>
+                </div>
             </div>
         </div>
 
@@ -606,6 +771,13 @@
         const historyList = document.getElementById("historyList");
         const historyEmpty = document.getElementById("historyEmpty");
 
+        document.querySelectorAll(".quick-prompt").forEach(function (button) {
+            button.addEventListener("click", function () {
+                messageInput.value = button.dataset.prompt || "";
+                messageInput.focus();
+            });
+        });
+
         function loadConversations() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
@@ -624,27 +796,6 @@
             return Date.now() + "-" + Math.random().toString(36).slice(2, 8);
         }
 
-        function newConversationId() {
-            if (window.crypto && typeof window.crypto.randomUUID === "function") {
-                return window.crypto.randomUUID();
-            }
-            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-                /[xy]/g,
-                function (c) {
-                    const r = (Math.random() * 16) | 0;
-                    const v = c === "x" ? r : ((r & 0x3) | 0x8);
-                    return v.toString(16);
-                }
-            );
-        }
-
-        function ensureConversationId(conv) {
-            if (!conv || !conv.conversationId) {
-                conv.conversationId = newConversationId();
-            }
-            return conv.conversationId;
-        }
-
         function getCurrent() {
             return conversations.find(function (c) {
                 return c.id === currentId;
@@ -657,11 +808,36 @@
 
             const bubble = document.createElement("div");
             bubble.className = "msg " + role;
-            bubble.textContent = text;
+            if (role === "user") {
+                renderUserMessage(bubble, text);
+            } else {
+                bubble.textContent = text;
+            }
             chatWindow.appendChild(bubble);
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
             return bubble;
+        }
+
+        // These visible highlights explain which common scam-related phrases
+        // appear in the user's own message. They do not change the AI verdict.
+        const RISK_PHRASE_SPLITTER = /(chuyển\s+(?:tiền|khoản)|mã\s+(?:otp|xác\s+minh)|mật\s+khẩu|công\s+an|tòa\s+án|ngân\s+hàng|bấm\s+(?:vào\s+)?link|click\s+(?:vào\s+)?link|trúng\s+thưởng|nhận\s+quà|khóa\s+tài\s+khoản)/gi;
+        const RISK_PHRASE_CHECK = /^(chuyển\s+(?:tiền|khoản)|mã\s+(?:otp|xác\s+minh)|mật\s+khẩu|công\s+an|tòa\s+án|ngân\s+hàng|bấm\s+(?:vào\s+)?link|click\s+(?:vào\s+)?link|trúng\s+thưởng|nhận\s+quà|khóa\s+tài\s+khoản)$/i;
+
+        function renderUserMessage(bubble, text) {
+            const content = String(text || "");
+
+            content.split(RISK_PHRASE_SPLITTER).forEach(function (part) {
+                if (RISK_PHRASE_CHECK.test(part)) {
+                    const mark = document.createElement("mark");
+                    mark.className = "risk-keyword";
+                    mark.title = "Cụm từ có thể liên quan đến lừa đảo";
+                    mark.textContent = part;
+                    bubble.appendChild(mark);
+                    return;
+                }
+                bubble.appendChild(document.createTextNode(part));
+            });
         }
 
         // Verdict display metadata (Vietnamese).
@@ -671,13 +847,21 @@
             safe: { icon: "✅", label: "An toàn" }
         };
 
+        const RISK_LEVEL_META = {
+            warning: { label: "Cao", defaultScore: 85 },
+            needs_more_info: { label: "Cần xác minh", defaultScore: 50 },
+            safe: { label: "Thấp", defaultScore: 15 }
+        };
+
         function verdictType(v) {
             const t = (v && v.verdict) || "";
             return (t in VERDICT_META) ? t : "needs_more_info";
         }
 
-        function buildVerdictCard(bubble, v) {
+        function buildVerdictCard(bubble, message) {
             bubble.innerHTML = "";
+
+            const v = message && message.verdict ? message.verdict : message;
 
             const t = verdictType(v);
             const meta = VERDICT_META[t];
@@ -689,7 +873,7 @@
                     ? Math.round(v.confidence * 100)
                     : null;
 
-            // Header: badge + confidence.
+            // Header: verdict badge.
             const banner = document.createElement("div");
             banner.className = "vc-banner";
 
@@ -697,14 +881,38 @@
             badge.className = "vc-badge";
             badge.textContent = meta.icon + " " + meta.label;
             banner.appendChild(badge);
-
-            if (conf !== null) {
-                const c = document.createElement("span");
-                c.className = "vc-confidence";
-                c.textContent = "Độ tin cậy: " + conf + "%";
-                banner.appendChild(c);
-            }
             bubble.appendChild(banner);
+
+            // Risk level is separate from confidence: a warning can be shown
+            // even when the backend does not return a confidence score.
+            const riskMeta = RISK_LEVEL_META[t];
+            const risk = document.createElement("div");
+            risk.className = "vc-risk " + t;
+
+            const riskTitle = document.createElement("div");
+            riskTitle.className = "vc-risk-title";
+            const level = document.createElement("span");
+            level.innerHTML = "Mức rủi ro: <strong>" + riskMeta.label + "</strong>";
+            const scoreText = document.createElement("span");
+            scoreText.textContent = conf !== null
+                ? "Độ tin cậy AI: " + conf + "%"
+                : "Đang đánh giá theo nội dung";
+            riskTitle.append(level, scoreText);
+
+            const meter = document.createElement("div");
+            meter.className = "vc-risk-meter";
+            meter.setAttribute("role", "progressbar");
+            const score = conf !== null ? conf : riskMeta.defaultScore;
+            meter.setAttribute("aria-label", "Mức rủi ro " + riskMeta.label);
+            meter.setAttribute("aria-valuenow", String(score));
+            meter.setAttribute("aria-valuemin", "0");
+            meter.setAttribute("aria-valuemax", "100");
+            const fill = document.createElement("div");
+            fill.className = "vc-risk-fill";
+            fill.style.width = score + "%";
+            meter.appendChild(fill);
+            risk.append(riskTitle, meter);
+            bubble.appendChild(risk);
 
             // Explanation.
             if (v.explanation) {
@@ -739,6 +947,20 @@
                 bubble.appendChild(act);
             }
 
+            // Make the recommended immediate action unmissable for high-risk cases.
+            if (t === "warning") {
+                const urgent = document.createElement("div");
+                urgent.className = "vc-urgent-warning";
+                urgent.textContent = "🚨 Mức rủi ro cao: Dừng trao đổi, không chuyển tiền, không cung cấp OTP/mật khẩu và xác minh qua kênh chính thức trước khi thực hiện bất kỳ giao dịch nào.";
+                bubble.appendChild(urgent);
+            }
+
+            // The assistant supports screening; it must not be presented as an official conclusion.
+            const aiNotice = document.createElement("div");
+            aiNotice.className = "vc-ai-notice";
+            aiNotice.textContent = "ℹ️ Đây là gợi ý phân tích từ AI nhằm hỗ trợ nhận diện rủi ro, không thay thế kết luận của cơ quan chức năng. Khi nghi ngờ, hãy liên hệ ngân hàng hoặc cơ quan công an qua kênh chính thức.";
+            bubble.appendChild(aiNotice);
+
             // Sources.
             if (Array.isArray(v.sources) && v.sources.length) {
                 const lab = document.createElement("div");
@@ -760,12 +982,41 @@
                 });
                 bubble.appendChild(ul);
             }
+
+            if (message && message.backendConversationId && message.backendMessageId) {
+                const actions = document.createElement("div");
+                actions.className = "vc-feedback-actions";
+
+                [
+                    { label: "👍 Đúng", isCorrect: true },
+                    { label: "👎 Chưa đúng", isCorrect: false }
+                ].forEach(function (choice) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "vc-feedback-button " + (choice.isCorrect ? "correct" : "incorrect");
+                    button.textContent = choice.label;
+                    button.addEventListener("click", async function () {
+                        button.disabled = true;
+                        try {
+                            await submitFeedback(message, choice.isCorrect);
+                            actions.textContent = "Cảm ơn bạn, đánh giá đã được ghi nhận.";
+                            actions.classList.add("vc-feedback-status");
+                        } catch (error) {
+                            button.disabled = false;
+                            window.alert(error.message || "Chưa thể gửi đánh giá.");
+                        }
+                    });
+                    actions.appendChild(button);
+                });
+
+                bubble.appendChild(actions);
+            }
         }
 
         // Fill an AI bubble: verdict card when available, else plain text.
         function fillAiMessage(bubble, m) {
             if (m && m.verdict && m.verdict.verdict) {
-                buildVerdictCard(bubble, m.verdict);
+                buildVerdictCard(bubble, m);
                 return;
             }
             bubble.textContent = m.text || "";
@@ -786,7 +1037,7 @@
 
                     if (m.role === "user") {
                         bubble.className = "msg user";
-                        bubble.textContent = m.text || "";
+                        renderUserMessage(bubble, m.text);
                     } else {
                         bubble.className = "msg ai";
                         fillAiMessage(bubble, m);
@@ -841,28 +1092,58 @@
         }
 
         // ---------------- Actions ----------------
-        const USER_NAME_KEY = "duyanhtod_ai_user_name";
-        const USER_UUID_KEY = "duyanhtod_ai_user_uuid";
+        const USER_NAME_KEY = "dt03_user_name";
+        const BACKEND_USER_ID_KEY = "dt03_backend_user_id";
 
         function getUserName() {
             return localStorage.getItem(USER_NAME_KEY) || "Khách";
         }
 
+        function getBackendUserId() {
+            let userId = localStorage.getItem(BACKEND_USER_ID_KEY);
+
+            if (!userId) {
+                userId = crypto.randomUUID();
+                localStorage.setItem(BACKEND_USER_ID_KEY, userId);
+            }
+
+            return userId;
+        }
+
+        async function backendApi(path, init) {
+            const response = await fetch(path, {
+                ...init,
+                headers: {
+                    "X-User-ID": getBackendUserId(),
+                    ...(init && init.body ? { "Content-Type": "application/json" } : {}),
+                    ...(init && init.headers ? init.headers : {})
+                }
+            });
+            const data = response.status === 204
+                ? null
+                : await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(data?.message || `Lỗi HTTP ${response.status}`);
+            }
+
+            return data;
+        }
+
+        async function submitFeedback(message, isCorrect) {
+            return backendApi("/backend-api/feedback", {
+                method: "POST",
+                body: JSON.stringify({
+                    conversation_id: message.backendConversationId,
+                    message_id: message.backendMessageId,
+                    is_correct: isCorrect
+                })
+            });
+        }
+
         function saveUserName(name) {
             localStorage.setItem(USER_NAME_KEY, name);
             document.getElementById("profileName").textContent = name;
-        }
-
-        // A stable per-user UUID sent as X-User-ID to the backend.
-        function getUserUuid() {
-            let id = localStorage.getItem(USER_UUID_KEY);
-
-            if (!id) {
-                id = newConversationId();
-                localStorage.setItem(USER_UUID_KEY, id);
-            }
-
-            return id;
         }
 
         // Names containing "admin" (case-insensitive) open the admin page.
@@ -891,9 +1172,10 @@
         function newChat() {
             const conv = {
                 id: newId(),
-                conversationId: newConversationId(),
                 title: "Cuộc trò chuyện mới",
-                messages: []
+                messages: [],
+                backendConversationId: null,
+                messagesLoaded: true
             };
             conversations.push(conv);
             currentId = conv.id;
@@ -903,14 +1185,59 @@
             messageInput.focus();
         }
 
-        function openConversation(id) {
+        async function openConversation(id) {
             currentId = id;
             saveConversations();
             renderConversation();
             renderHistory();
+
+            const current = getCurrent();
+            if (!current || !current.backendConversationId || current.messagesLoaded) {
+                return;
+            }
+
+            try {
+                const data = await backendApi(
+                    `/backend-api/conversations/${current.backendConversationId}/messages`
+                );
+                current.messages = (data.messages || []).map(function (message) {
+                    if (message.role === "user") {
+                        return { role: "user", text: String(message.content || "") };
+                    }
+
+                    return {
+                        role: "ai",
+                        text: "",
+                        verdict: message.content,
+                        backendConversationId: current.backendConversationId,
+                        backendMessageId: message.message_id || null
+                    };
+                });
+                current.messagesLoaded = true;
+                saveConversations();
+                renderConversation();
+            } catch (error) {
+                console.error("Không tải được lịch sử backend:", error);
+            }
         }
 
-        function deleteConversation(id) {
+        async function deleteConversation(id) {
+            const conversation = conversations.find(function (item) {
+                return item.id === id;
+            });
+
+            if (conversation && conversation.backendConversationId) {
+                try {
+                    await backendApi(
+                        `/backend-api/conversations/${conversation.backendConversationId}`,
+                        { method: "DELETE" }
+                    );
+                } catch (error) {
+                    window.alert(error.message || "Không thể xóa cuộc trò chuyện.");
+                    return;
+                }
+            }
+
             conversations = conversations.filter(function (c) {
                 return c.id !== id;
             });
@@ -924,6 +1251,41 @@
             saveConversations();
             renderConversation();
             renderHistory();
+        }
+
+        async function syncBackendConversations() {
+            try {
+                const data = await backendApi("/backend-api/conversations");
+                const known = new Map(
+                    conversations
+                        .filter(function (conversation) {
+                            return conversation.backendConversationId;
+                        })
+                        .map(function (conversation) {
+                            return [conversation.backendConversationId, conversation];
+                        })
+                );
+
+                (data.conversations || []).forEach(function (remote) {
+                    const local = known.get(remote.conversation_id);
+                    if (local) {
+                        local.title = remote.title;
+                        return;
+                    }
+
+                    conversations.push({
+                        id: newId(),
+                        title: remote.title,
+                        messages: [],
+                        backendConversationId: remote.conversation_id,
+                        messagesLoaded: false
+                    });
+                });
+                saveConversations();
+            } catch (error) {
+                // Local fallback is expected before FastAPI is configured.
+                console.info("Chưa thể đồng bộ lịch sử backend:", error.message);
+            }
         }
 
         // ---------------- Chat submit ----------------
@@ -942,8 +1304,6 @@
                 newChat();
                 current = getCurrent();
             }
-
-            ensureConversationId(current);
 
             // Use the first user message as the conversation title.
             if (current.messages.length === 0) {
@@ -969,9 +1329,9 @@
                     },
                     body: JSON.stringify({
                         name: getUserName(),
-                        user_id: getUserUuid(),
-                        conversation_id: current.conversationId,
-                        message
+                        message,
+                        user_id: getBackendUserId(),
+                        conversation_id: current.backendConversationId || undefined
                     })
                 });
 
@@ -986,10 +1346,15 @@
                 }
 
                 if (json.verdict && json.verdict.verdict) {
+                    if (json.conversation_id) {
+                        current.backendConversationId = json.conversation_id;
+                    }
                     const aiMsg = {
                         role: "ai",
                         text: json.reply || "",
-                        verdict: json.verdict
+                        verdict: json.verdict,
+                        backendConversationId: current.backendConversationId,
+                        backendMessageId: json.message_id || null
                     };
                     fillAiMessage(typingBubble, aiMsg);
                     current.messages.push(aiMsg);
@@ -1147,12 +1512,16 @@
             window.location.href = "admin.html";
         }
 
-        if (!currentId) {
-            newChat();
-        } else {
-            renderConversation();
-        }
-        renderHistory();
+        (async function initializeChat() {
+            await syncBackendConversations();
+
+            if (!currentId) {
+                newChat();
+            } else {
+                renderConversation();
+            }
+            renderHistory();
+        })();
     </script>
 
 </body>

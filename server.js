@@ -2,45 +2,6 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
-// Load key=value lines from .env (dependency-free dotenv).
-(function loadEnv() {
-    const envPath = path.join(__dirname, ".env");
-
-    if (!fs.existsSync(envPath)) {
-        return;
-    }
-
-    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
-
-    lines.forEach(function (line) {
-        const trimmed = line.trim();
-
-        if (!trimmed || trimmed.charAt(0) === "#") {
-            return;
-        }
-
-        const eq = trimmed.indexOf("=");
-
-        if (eq === -1) {
-            return;
-        }
-
-        const key = trimmed.slice(0, eq).trim();
-        let value = trimmed.slice(eq + 1).trim();
-
-        if (
-            (value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))
-        ) {
-            value = value.slice(1, -1);
-        }
-
-        if (key && !(key in process.env)) {
-            process.env[key] = value;
-        }
-    });
-})();
-
 const app = express();
 
 app.use(express.json());
@@ -74,6 +35,107 @@ function appendChatLog(entry) {
     } catch (err) {
         console.error("Failed to write chat log:", err);
     }
+}
+
+// The browser never receives APP_API_KEY.  This Express server acts as a
+// small Backend-for-Frontend (BFF) and forwards authenticated user requests
+// to FastAPI only when SCAM_API_URL is configured.
+function backendConfigured() {
+    return Boolean(process.env.SCAM_API_URL);
+}
+
+function backendApiUrl(path) {
+    const chatUrl = process.env.SCAM_API_URL;
+
+    if (!chatUrl) {
+        const error = new Error("Backend chưa được cấu hình (thiếu SCAM_API_URL).");
+        error.status = 503;
+        throw error;
+    }
+
+    try {
+        return new URL(path, chatUrl).toString();
+    } catch {
+        const error = new Error("SCAM_API_URL không phải URL hợp lệ.");
+        error.status = 503;
+        throw error;
+    }
+}
+
+async function backendUserRequest(path, userId, options = {}) {
+    const appApiKey = process.env.APP_API_KEY;
+
+    if (!appApiKey) {
+        const error = new Error("Backend chưa được cấu hình (thiếu APP_API_KEY).");
+        error.status = 503;
+        throw error;
+    }
+
+    if (!userId) {
+        const error = new Error("Thiếu mã người dùng.");
+        error.status = 400;
+        throw error;
+    }
+
+    const headers = {
+        "X-API-Key": appApiKey,
+        "X-User-ID": userId,
+        ...(options.body === undefined ? {} : { "Content-Type": "application/json" })
+    };
+    const response = await fetch(backendApiUrl(path), {
+        method: options.method || "GET",
+        headers,
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
+    });
+    const data = response.status === 204
+        ? null
+        : await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const error = new Error(
+            typeof data?.detail === "string"
+                ? data.detail
+                : `Backend trả lỗi HTTP ${response.status}`
+        );
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
+}
+
+async function backendAdminRequest(path, options = {}) {
+    const adminApiKey = process.env.ADMIN_API_KEY;
+
+    if (!adminApiKey) {
+        const error = new Error("Backend admin chưa được cấu hình (thiếu ADMIN_API_KEY).");
+        error.status = 503;
+        throw error;
+    }
+
+    const response = await fetch(backendApiUrl(path), {
+        method: options.method || "GET",
+        headers: {
+            "X-Admin-Key": adminApiKey,
+            ...(options.body === undefined ? {} : { "Content-Type": "application/json" })
+        },
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
+    });
+    const data = response.status === 204
+        ? null
+        : await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const error = new Error(
+            typeof data?.detail === "string"
+                ? data.detail
+                : `Backend admin trả lỗi HTTP ${response.status}`
+        );
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,93 +273,28 @@ function analyzeLocally(message) {
     };
 }
 
-// The backend returns a conversation history like:
-// { conversation_id, messages: [ {role, content}, ... ] }
-// where the last "assistant" message's content is the verdict object.
-function extractVerdictFromConversation(data) {
-    if (!data || typeof data !== "object") {
-        return null;
-    }
-
-    if (data.verdict || data.matched_pattern_id ||
-        data.suggested_action) {
-        // The response is already a single verdict object.
-        return data;
-    }
-
-    const messages = Array.isArray(data.messages) ? data.messages : [];
-
-    for (let i = messages.length - 1; i >= 0; i--) {
-        const content = messages[i] && messages[i].content;
-
-        if (content && typeof content === "object" &&
-            content.verdict) {
-            return content;
-        }
-    }
-
-    return null;
-}
-
-async function getAnalysis(message, conversationId, userId) {
-    const backendUrl = process.env.SCAM_API_URL;
-
-    if (backendUrl) {
-        const headers = {
-            "Content-Type": "application/json"
+async function getAnalysis(message, userId, conversationId) {
+    if (!backendConfigured()) {
+        return {
+            ...analyzeLocally(message),
+            conversation_id: null,
+            message_id: null
         };
-
-        // The backend requires an X-User-ID header that must be a UUID.
-        if (userId || process.env.SCAM_USER_ID) {
-            headers["X-User-ID"] = userId || process.env.SCAM_USER_ID;
-        }
-
-        const keyHeader =
-            process.env.SCAM_API_KEY_HEADER || "x-api-key";
-
-        if (keyHeader && process.env.SCAM_API_KEY) {
-            headers[keyHeader] = process.env.SCAM_API_KEY;
-        }
-
-        try {
-            const response = await fetch(backendUrl, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({
-                    conversation_id: conversationId || "",
-                    message
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(
-                    "Scam backend returned " + response.status
-                );
-            }
-
-            const data = await response.json();
-            const analysis = extractVerdictFromConversation(data);
-
-            if (!analysis) {
-                throw new Error(
-                    "Scam backend response did not contain a verdict."
-                );
-            }
-
-            return normalizeAnalysis(analysis);
-        } catch (err) {
-            // If the remote backend fails, fall back to local rules so
-            // the app still responds.
-            console.error(
-                "Scam backend failed, using local analyzer:",
-                err.message
-            );
-
-            return analyzeLocally(message);
-        }
     }
 
-    return analyzeLocally(message);
+    const data = await backendUserRequest("/api/chat", userId, {
+        method: "POST",
+        body: {
+            message,
+            ...(conversationId ? { conversation_id: conversationId } : {})
+        }
+    });
+
+    return {
+        ...normalizeAnalysis(data),
+        conversation_id: data.conversation_id || null,
+        message_id: data.message_id || null
+    };
 }
 
 // Serve the AI chat page as the landing page.
@@ -318,16 +315,14 @@ app.post("/ai", async (req, res) => {
             req.body.name.trim().length > 0
                 ? req.body.name.trim().slice(0, 100)
                 : "Anonymous";
-
-        const conversationId =
-            typeof req.body?.conversation_id === "string"
-                ? req.body.conversation_id.slice(0, 100)
-                : "";
-
         const userId =
             typeof req.body?.user_id === "string"
-                ? req.body.user_id.slice(0, 100)
+                ? req.body.user_id.trim()
                 : "";
+        const conversationId =
+            typeof req.body?.conversation_id === "string"
+                ? req.body.conversation_id.trim()
+                : null;
 
         if (!message) {
             return res.status(400).json({
@@ -336,7 +331,14 @@ app.post("/ai", async (req, res) => {
             });
         }
 
-        const verdict = await getAnalysis(message, conversationId, userId);
+        if (backendConfigured() && !userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu mã người dùng để gọi backend."
+            });
+        }
+
+        const verdict = await getAnalysis(message, userId, conversationId);
 
         // A short reply kept for backwards compatibility / plain-text UIs.
         const reply =
@@ -345,28 +347,164 @@ app.post("/ai", async (req, res) => {
                 ? "\n" + verdict.suggested_action
                 : "");
 
-        // Record the full verdict alongside the message.
-        appendChatLog({
-            timestamp: new Date().toISOString(),
-            name,
-            message,
-            reply,
-            conversation_id: conversationId || null,
-            verdict
-        });
+        // FastAPI already stores a masked history. Only the legacy local
+        // fallback writes to chat-logs.json, which avoids duplicate raw logs.
+        if (!backendConfigured()) {
+            appendChatLog({
+                timestamp: new Date().toISOString(),
+                name,
+                message,
+                reply,
+                verdict
+            });
+        }
 
         return res.json({
             success: true,
             reply,
-            verdict
+            verdict,
+            conversation_id: verdict.conversation_id,
+            message_id: verdict.message_id
         });
     } catch (err) {
         console.error("AI request error:", err);
 
-        return res.status(500).json({
+        return res.status(err.status || 500).json({
             success: false,
             message: err.message || "Có lỗi khi xử lý yêu cầu."
         });
+    }
+});
+
+function userIdFromRequest(req) {
+    return typeof req.get("X-User-ID") === "string"
+        ? req.get("X-User-ID").trim()
+        : "";
+}
+
+function sendBackendError(res, err) {
+    console.error("Backend proxy error:", err);
+    return res.status(err.status || 502).json({
+        success: false,
+        message: err.message || "Không thể gọi backend."
+    });
+}
+
+// User-history and feedback proxy endpoints. The browser supplies only its
+// stable user UUID; this server adds the secret APP_API_KEY.
+app.get("/backend-api/conversations", async (req, res) => {
+    try {
+        const data = await backendUserRequest(
+            "/api/conversations", userIdFromRequest(req)
+        );
+        return res.json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.get("/backend-api/conversations/:conversationId/messages", async (req, res) => {
+    try {
+        const data = await backendUserRequest(
+            `/api/conversations/${encodeURIComponent(req.params.conversationId)}/messages`,
+            userIdFromRequest(req)
+        );
+        return res.json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.delete("/backend-api/conversations/:conversationId", async (req, res) => {
+    try {
+        await backendUserRequest(
+            `/api/conversations/${encodeURIComponent(req.params.conversationId)}`,
+            userIdFromRequest(req),
+            { method: "DELETE" }
+        );
+        return res.status(204).end();
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.post("/backend-api/feedback", async (req, res) => {
+    try {
+        const data = await backendUserRequest(
+            "/api/feedback", userIdFromRequest(req),
+            { method: "POST", body: req.body }
+        );
+        return res.json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+// Local-demo admin proxy. ADMIN_API_KEY remains on the Express server and is
+// never included in the page source. Before deployment this route must be
+// protected by real admin authentication/session middleware.
+app.get("/admin-api/stats", async (req, res) => {
+    try {
+        return res.json(await backendAdminRequest("/api/admin/stats"));
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.get("/admin-api/feedback", async (req, res) => {
+    try {
+        const status = ["pending", "approved", "rejected"].includes(req.query.status)
+            ? req.query.status
+            : "pending";
+        const data = await backendAdminRequest(
+            `/api/admin/feedback?status=${encodeURIComponent(status)}&limit=200`
+        );
+        return res.json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.put("/admin-api/feedback/:feedbackId/review", async (req, res) => {
+    try {
+        const data = await backendAdminRequest(
+            `/api/admin/feedback/${encodeURIComponent(req.params.feedbackId)}/review`,
+            { method: "PUT", body: req.body }
+        );
+        return res.json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.get("/admin-api/patterns", async (req, res) => {
+    try {
+        return res.json(await backendAdminRequest("/api/admin/patterns"));
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.post("/admin-api/patterns", async (req, res) => {
+    try {
+        const data = await backendAdminRequest(
+            "/api/admin/patterns", { method: "POST", body: req.body }
+        );
+        return res.status(201).json(data);
+    } catch (err) {
+        return sendBackendError(res, err);
+    }
+});
+
+app.delete("/admin-api/patterns/:patternId", async (req, res) => {
+    try {
+        await backendAdminRequest(
+            `/api/admin/patterns/${encodeURIComponent(req.params.patternId)}`,
+            { method: "DELETE" }
+        );
+        return res.status(204).end();
+    } catch (err) {
+        return sendBackendError(res, err);
     }
 });
 
