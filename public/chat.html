@@ -177,6 +177,27 @@
             color: #111827;
         }
 
+        .admin-login-btn {
+            margin: 4px 8px 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            color: #92400e;
+            background: #fef3c7;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .admin-login-btn:hover {
+            background: #fde68a;
+            color: #78350f;
+        }
+
         .profile .avatar {
             width: 34px;
             height: 34px;
@@ -538,6 +559,8 @@
 
         <button class="global-btn" id="globalBtn">🌐 Dữ liệu toàn bộ</button>
 
+        <button class="admin-login-btn" id="adminLoginBtn" title="Nhập tên có chứa 'admin' để vào trang quản trị">🔑 Đăng nhập Quản trị</button>
+
         <div class="profile">
             <div class="avatar">U</div>
             <div class="name" id="profileName">Hồ sơ</div>
@@ -599,6 +622,27 @@
 
         function newId() {
             return Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+        }
+
+        function newConversationId() {
+            if (window.crypto && typeof window.crypto.randomUUID === "function") {
+                return window.crypto.randomUUID();
+            }
+            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+                /[xy]/g,
+                function (c) {
+                    const r = (Math.random() * 16) | 0;
+                    const v = c === "x" ? r : ((r & 0x3) | 0x8);
+                    return v.toString(16);
+                }
+            );
+        }
+
+        function ensureConversationId(conv) {
+            if (!conv || !conv.conversationId) {
+                conv.conversationId = newConversationId();
+            }
+            return conv.conversationId;
         }
 
         function getCurrent() {
@@ -798,6 +842,7 @@
 
         // ---------------- Actions ----------------
         const USER_NAME_KEY = "duyanhtod_ai_user_name";
+        const USER_UUID_KEY = "duyanhtod_ai_user_uuid";
 
         function getUserName() {
             return localStorage.getItem(USER_NAME_KEY) || "Khách";
@@ -806,6 +851,18 @@
         function saveUserName(name) {
             localStorage.setItem(USER_NAME_KEY, name);
             document.getElementById("profileName").textContent = name;
+        }
+
+        // A stable per-user UUID sent as X-User-ID to the backend.
+        function getUserUuid() {
+            let id = localStorage.getItem(USER_UUID_KEY);
+
+            if (!id) {
+                id = newConversationId();
+                localStorage.setItem(USER_UUID_KEY, id);
+            }
+
+            return id;
         }
 
         // Names containing "admin" (case-insensitive) open the admin page.
@@ -834,6 +891,7 @@
         function newChat() {
             const conv = {
                 id: newId(),
+                conversationId: newConversationId(),
                 title: "Cuộc trò chuyện mới",
                 messages: []
             };
@@ -885,6 +943,8 @@
                 current = getCurrent();
             }
 
+            ensureConversationId(current);
+
             // Use the first user message as the conversation title.
             if (current.messages.length === 0) {
                 current.title = message.slice(0, 40);
@@ -909,6 +969,8 @@
                     },
                     body: JSON.stringify({
                         name: getUserName(),
+                        user_id: getUserUuid(),
+                        conversation_id: current.conversationId,
                         message
                     })
                 });
@@ -952,6 +1014,10 @@
 
         newChatBtn.addEventListener("click", newChat);
         document.getElementById("settingsBtn").addEventListener("click", promptForName);
+
+        // Admin login: reopen the name prompt any time. If the entered
+        // name contains "admin", promptForName redirects to admin.html.
+        document.getElementById("adminLoginBtn").addEventListener("click", promptForName);
 
         // ---------------- Global log view ----------------
         async function showGlobalLog() {

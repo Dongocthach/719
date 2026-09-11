@@ -2,6 +2,45 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
+// Load key=value lines from .env (dependency-free dotenv).
+(function loadEnv() {
+    const envPath = path.join(__dirname, ".env");
+
+    if (!fs.existsSync(envPath)) {
+        return;
+    }
+
+    const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+
+    lines.forEach(function (line) {
+        const trimmed = line.trim();
+
+        if (!trimmed || trimmed.charAt(0) === "#") {
+            return;
+        }
+
+        const eq = trimmed.indexOf("=");
+
+        if (eq === -1) {
+            return;
+        }
+
+        const key = trimmed.slice(0, eq).trim();
+        let value = trimmed.slice(eq + 1).trim();
+
+        if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.slice(1, -1);
+        }
+
+        if (key && !(key in process.env)) {
+            process.env[key] = value;
+        }
+    });
+})();
+
 const app = express();
 
 app.use(express.json());
@@ -172,33 +211,90 @@ function analyzeLocally(message) {
     };
 }
 
-async function getAnalysis(message) {
+// The backend returns a conversation history like:
+// { conversation_id, messages: [ {role, content}, ... ] }
+// where the last "assistant" message's content is the verdict object.
+function extractVerdictFromConversation(data) {
+    if (!data || typeof data !== "object") {
+        return null;
+    }
+
+    if (data.verdict || data.matched_pattern_id ||
+        data.suggested_action) {
+        // The response is already a single verdict object.
+        return data;
+    }
+
+    const messages = Array.isArray(data.messages) ? data.messages : [];
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const content = messages[i] && messages[i].content;
+
+        if (content && typeof content === "object" &&
+            content.verdict) {
+            return content;
+        }
+    }
+
+    return null;
+}
+
+async function getAnalysis(message, conversationId, userId) {
     const backendUrl = process.env.SCAM_API_URL;
 
     if (backendUrl) {
-        const response = await fetch(backendUrl, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ message })
-        });
+        const headers = {
+            "Content-Type": "application/json"
+        };
 
-        if (!response.ok) {
-            throw new Error(
-                "Scam backend returned " + response.status
-            );
+        // The backend requires an X-User-ID header that must be a UUID.
+        if (userId || process.env.SCAM_USER_ID) {
+            headers["X-User-ID"] = userId || process.env.SCAM_USER_ID;
         }
 
-        const data = await response.json();
+        const keyHeader =
+            process.env.SCAM_API_KEY_HEADER || "x-api-key";
 
-        // Accept { verdict: {...} }, { result: {...} }, or the analysis directly.
-        const analysis =
-            (data && typeof data === "object" &&
-                (data.verdict || data.result || data.analysis)) ||
-            data;
+        if (keyHeader && process.env.SCAM_API_KEY) {
+            headers[keyHeader] = process.env.SCAM_API_KEY;
+        }
 
-        return normalizeAnalysis(analysis);
+        try {
+            const response = await fetch(backendUrl, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    conversation_id: conversationId || "",
+                    message
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    "Scam backend returned " + response.status
+                );
+            }
+
+            const data = await response.json();
+            const analysis = extractVerdictFromConversation(data);
+
+            if (!analysis) {
+                throw new Error(
+                    "Scam backend response did not contain a verdict."
+                );
+            }
+
+            return normalizeAnalysis(analysis);
+        } catch (err) {
+            // If the remote backend fails, fall back to local rules so
+            // the app still responds.
+            console.error(
+                "Scam backend failed, using local analyzer:",
+                err.message
+            );
+
+            return analyzeLocally(message);
+        }
     }
 
     return analyzeLocally(message);
@@ -223,6 +319,16 @@ app.post("/ai", async (req, res) => {
                 ? req.body.name.trim().slice(0, 100)
                 : "Anonymous";
 
+        const conversationId =
+            typeof req.body?.conversation_id === "string"
+                ? req.body.conversation_id.slice(0, 100)
+                : "";
+
+        const userId =
+            typeof req.body?.user_id === "string"
+                ? req.body.user_id.slice(0, 100)
+                : "";
+
         if (!message) {
             return res.status(400).json({
                 success: false,
@@ -230,7 +336,7 @@ app.post("/ai", async (req, res) => {
             });
         }
 
-        const verdict = await getAnalysis(message);
+        const verdict = await getAnalysis(message, conversationId, userId);
 
         // A short reply kept for backwards compatibility / plain-text UIs.
         const reply =
@@ -245,6 +351,7 @@ app.post("/ai", async (req, res) => {
             name,
             message,
             reply,
+            conversation_id: conversationId || null,
             verdict
         });
 
