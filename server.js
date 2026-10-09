@@ -6,9 +6,22 @@ const fs = require("fs");
 
 const UnityCloudCodeClient = require("./unityCloudCodeClient");
 
-const unity = new UnityCloudCodeClient();
-
 const app = express();
+
+// The Unity client validates its configuration in the constructor. Creating it
+// at module load meant a missing UNITY_* variable crashed the whole server on
+// startup. Build it on first use instead, so the static site and the public
+// /ai + /chat-logs endpoints keep working without Unity credentials, and the
+// admin endpoints report the misconfiguration as a normal 500 response.
+let unityClient = null;
+
+function getUnityClient() {
+    if (!unityClient) {
+        unityClient = new UnityCloudCodeClient();
+    }
+
+    return unityClient;
+}
 
 app.use(express.json());
 
@@ -40,7 +53,8 @@ function appendChatLog(entry) {
     }
 }
 
-// Serve static files
+// Serve the built Vue single-page app. `npm run build` writes the Vite bundle
+// into public/, so this directory holds build output rather than sources.
 app.use(express.static(path.join(__dirname, "public")));
 
 function requireAdminApiKey(req, res, next) {
@@ -101,7 +115,7 @@ app.post("/say-hello", requireAdminApiKey, async (req, res) => {
             });
         }
 
-        const result = await unity.callModuleFunction(
+        const result = await getUnityClient().callModuleFunction(
             "SayHello",
             {
                 name
@@ -137,7 +151,7 @@ app.post("/DeletePlayerDataByPlayerId", requireAdminApiKey, async (req, res) => 
             });
         }
 
-        const result = await unity.callModuleFunction(
+        const result = await getUnityClient().callModuleFunction(
             "DeletePlayerDataByPlayerId",
             {
                 playerId
@@ -246,6 +260,34 @@ app.get("/chat-logs", (req, res) => {
             message: err.message || "Failed to read chat logs."
         });
     }
+});
+
+// ---------------------------------------------------------------------------
+// SPA fallback.
+//
+// The Vue app uses history-mode routing (/chat), so a direct visit or a page
+// refresh must return index.html and let the client router resolve the route.
+// Registered last so it never shadows a real API route or a static asset.
+// ---------------------------------------------------------------------------
+app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+        return next();
+    }
+
+    // A path with a file extension is an asset request, not an app route:
+    // let it 404 rather than answering with HTML. Browsers send
+    // `Accept: */*` for scripts and images, so the content negotiation below
+    // alone would not catch this.
+    if (path.extname(req.path)) {
+        return next();
+    }
+
+    // Only browser navigations get the app shell.
+    if (!req.accepts("html")) {
+        return next();
+    }
+
+    return res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;

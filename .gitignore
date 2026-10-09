@@ -1,3 +1,11 @@
 .env
+.env.local
 node_modules/
 chat-logs.json
+
+# Workspace-local npm cache used when installing inside a sandbox.
+.npm-cache/
+
+# Vite's own cache.
+client/node_modules/
+client/.vite/
